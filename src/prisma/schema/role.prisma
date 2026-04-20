@@ -15,5 +15,6 @@ model UserRole {
   role Role @relation(fields: [roleId], references: [id])
 
   @@unique([userId, roleId])
+  @@index([roleId])
   @@map("user_roles")
 }

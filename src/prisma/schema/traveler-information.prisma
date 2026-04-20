@@ -5,6 +5,8 @@ model TravelerInformation {
   email            String
   phone            String
   emergencyContact String   @map("emergency_contact")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   booking      Booking       @relation(fields: [bookingId], references: [id])
   bookingSeats BookingSeat[]

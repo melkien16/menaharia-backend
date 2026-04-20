@@ -1,13 +1,19 @@
 model Payment {
-  id              String         @id @default(uuid())
-  bookingId       String         @unique @map("booking_id")
-  method          payment_method
-  amount          Float
-  status          payment_status
-  transactionCode String?        @map("transaction_code")
-  paidAt          DateTime?      @map("paid_at")
+  id                String         @id @default(uuid())
+  bookingId         String         @unique @map("booking_id")
+  method            payment_method
+  amount            Float
+  status            payment_status @default(PENDING)
+  transactionCode   String?        @map("transaction_code")
+  gatewayReference  String?        @unique @map("gateway_reference")
+  callbackReference String?        @map("callback_reference")
+  paidAt            DateTime?      @map("paid_at")
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
 
   booking Booking @relation(fields: [bookingId], references: [id])
 
+  @@index([status])
+  @@index([method, status])
   @@map("payments")
 }

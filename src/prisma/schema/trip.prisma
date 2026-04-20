@@ -5,7 +5,7 @@ model Trip {
   departureTime DateTime    @map("departure_time")
   arrivalTime   DateTime    @map("arrival_time")
   price         Float
-  status        trip_status
+  status        trip_status @default(SCHEDULED)
   createdAt     DateTime    @default(now()) @map("created_at")
   updatedAt     DateTime    @updatedAt @map("updated_at")
   deletedAt     DateTime?   @map("deleted_at")
@@ -16,5 +16,7 @@ model Trip {
   tripSeats TripSeat[]
 
   @@index([routeId, departureTime])
+  @@index([busId, departureTime])
+  @@index([status])
   @@map("trips")
 }

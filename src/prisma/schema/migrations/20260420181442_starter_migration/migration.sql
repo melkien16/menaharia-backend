@@ -1,6 +1,3 @@
--- CreateSchema
-CREATE SCHEMA IF NOT EXISTS "public";
-
 -- CreateEnum
 CREATE TYPE "user_status" AS ENUM ('ACTIVE', 'INACTIVE', 'SUSPENDED');
 
@@ -34,6 +31,7 @@ CREATE TABLE "booking_seats" (
     "booking_id" TEXT NOT NULL,
     "trip_seat_id" TEXT NOT NULL,
     "traveler_id" TEXT,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "booking_seats_pkey" PRIMARY KEY ("id")
 );
@@ -41,12 +39,16 @@ CREATE TABLE "booking_seats" (
 -- CreateTable
 CREATE TABLE "bookings" (
     "id" TEXT NOT NULL,
+    "booking_reference" TEXT NOT NULL,
     "user_id" TEXT NOT NULL,
     "trip_id" TEXT NOT NULL,
     "booking_date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "status" "booking_status" NOT NULL,
+    "reserved_until" TIMESTAMP(3),
+    "status" "booking_status" NOT NULL DEFAULT 'PENDING',
     "total_amount" DOUBLE PRECISION NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+    "deleted_at" TIMESTAMP(3),
 
     CONSTRAINT "bookings_pkey" PRIMARY KEY ("id")
 );
@@ -58,7 +60,7 @@ CREATE TABLE "buses" (
     "plate_number" TEXT NOT NULL,
     "total_seats" INTEGER NOT NULL,
     "make" TEXT NOT NULL,
-    "status" "bus_status" NOT NULL,
+    "status" "bus_status" NOT NULL DEFAULT 'ACTIVE',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
     "deleted_at" TIMESTAMP(3),
@@ -74,7 +76,7 @@ CREATE TABLE "transport_partners" (
     "tin_no" TEXT NOT NULL,
     "phone" TEXT NOT NULL,
     "address" TEXT NOT NULL,
-    "status" "partner_status" NOT NULL,
+    "status" "partner_status" NOT NULL DEFAULT 'ACTIVE',
     "responsible_name" TEXT NOT NULL,
     "company_phone" TEXT NOT NULL,
     "company_email" TEXT NOT NULL,
@@ -91,9 +93,13 @@ CREATE TABLE "payments" (
     "booking_id" TEXT NOT NULL,
     "method" "payment_method" NOT NULL,
     "amount" DOUBLE PRECISION NOT NULL,
-    "status" "payment_status" NOT NULL,
+    "status" "payment_status" NOT NULL DEFAULT 'PENDING',
     "transaction_code" TEXT,
+    "gateway_reference" TEXT,
+    "callback_reference" TEXT,
     "paid_at" TIMESTAMP(3),
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "payments_pkey" PRIMARY KEY ("id")
 );
@@ -130,6 +136,7 @@ CREATE TABLE "user_roles" (
 -- CreateTable
 CREATE TABLE "routes" (
     "id" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
     "origin" TEXT NOT NULL,
     "destination" TEXT NOT NULL,
     "distance" DOUBLE PRECISION NOT NULL,
@@ -147,6 +154,7 @@ CREATE TABLE "seats" (
     "seat_number" TEXT NOT NULL,
     "seat_type" "seat_type" NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "seats_pkey" PRIMARY KEY ("id")
 );
@@ -155,6 +163,7 @@ CREATE TABLE "seats" (
 CREATE TABLE "tickets" (
     "id" TEXT NOT NULL,
     "booking_id" TEXT NOT NULL,
+    "ticket_number" TEXT NOT NULL,
     "qr_code" TEXT NOT NULL,
     "issued_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -169,6 +178,8 @@ CREATE TABLE "traveler_information" (
     "email" TEXT NOT NULL,
     "phone" TEXT NOT NULL,
     "emergency_contact" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "traveler_information_pkey" PRIMARY KEY ("id")
 );
@@ -178,8 +189,11 @@ CREATE TABLE "trip_seats" (
     "id" TEXT NOT NULL,
     "trip_id" TEXT NOT NULL,
     "seat_id" TEXT NOT NULL,
-    "status" "seat_status" NOT NULL,
+    "status" "seat_status" NOT NULL DEFAULT 'AVAILABLE',
     "reserved_at" TIMESTAMP(3),
+    "reservation_expiry" TIMESTAMP(3),
+    "booked_at" TIMESTAMP(3),
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "trip_seats_pkey" PRIMARY KEY ("id")
 );
@@ -192,7 +206,7 @@ CREATE TABLE "trips" (
     "departure_time" TIMESTAMP(3) NOT NULL,
     "arrival_time" TIMESTAMP(3) NOT NULL,
     "price" DOUBLE PRECISION NOT NULL,
-    "status" "trip_status" NOT NULL,
+    "status" "trip_status" NOT NULL DEFAULT 'SCHEDULED',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
     "deleted_at" TIMESTAMP(3),
@@ -216,7 +230,16 @@ CREATE TABLE "users" (
 );
 
 -- CreateIndex
+CREATE INDEX "booking_seats_booking_id_idx" ON "booking_seats"("booking_id");
+
+-- CreateIndex
+CREATE INDEX "booking_seats_traveler_id_idx" ON "booking_seats"("traveler_id");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "booking_seats_trip_seat_id_key" ON "booking_seats"("trip_seat_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "bookings_booking_reference_key" ON "bookings"("booking_reference");
 
 -- CreateIndex
 CREATE INDEX "bookings_user_id_idx" ON "bookings"("user_id");
@@ -225,16 +248,46 @@ CREATE INDEX "bookings_user_id_idx" ON "bookings"("user_id");
 CREATE INDEX "bookings_trip_id_idx" ON "bookings"("trip_id");
 
 -- CreateIndex
+CREATE INDEX "bookings_status_idx" ON "bookings"("status");
+
+-- CreateIndex
+CREATE INDEX "bookings_reserved_until_idx" ON "bookings"("reserved_until");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "buses_plate_number_key" ON "buses"("plate_number");
 
 -- CreateIndex
 CREATE INDEX "buses_operator_id_idx" ON "buses"("operator_id");
 
 -- CreateIndex
+CREATE INDEX "buses_status_idx" ON "buses"("status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "transport_partners_business_license_no_key" ON "transport_partners"("business_license_no");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "transport_partners_tin_no_key" ON "transport_partners"("tin_no");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "transport_partners_company_email_key" ON "transport_partners"("company_email");
+
+-- CreateIndex
 CREATE INDEX "transport_partners_status_idx" ON "transport_partners"("status");
 
 -- CreateIndex
+CREATE INDEX "transport_partners_deleted_at_idx" ON "transport_partners"("deleted_at");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "payments_booking_id_key" ON "payments"("booking_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "payments_gateway_reference_key" ON "payments"("gateway_reference");
+
+-- CreateIndex
+CREATE INDEX "payments_status_idx" ON "payments"("status");
+
+-- CreateIndex
+CREATE INDEX "payments_method_status_idx" ON "payments"("method", "status");
 
 -- CreateIndex
 CREATE INDEX "refresh_tokens_user_id_idx" ON "refresh_tokens"("user_id");
@@ -243,10 +296,19 @@ CREATE INDEX "refresh_tokens_user_id_idx" ON "refresh_tokens"("user_id");
 CREATE UNIQUE INDEX "roles_name_key" ON "roles"("name");
 
 -- CreateIndex
+CREATE INDEX "user_roles_role_id_idx" ON "user_roles"("role_id");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "user_roles_user_id_role_id_key" ON "user_roles"("user_id", "role_id");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "routes_code_key" ON "routes"("code");
+
+-- CreateIndex
 CREATE INDEX "routes_origin_destination_idx" ON "routes"("origin", "destination");
+
+-- CreateIndex
+CREATE INDEX "seats_bus_id_idx" ON "seats"("bus_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "seats_bus_id_seat_number_key" ON "seats"("bus_id", "seat_number");
@@ -255,10 +317,16 @@ CREATE UNIQUE INDEX "seats_bus_id_seat_number_key" ON "seats"("bus_id", "seat_nu
 CREATE UNIQUE INDEX "tickets_booking_id_key" ON "tickets"("booking_id");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "tickets_ticket_number_key" ON "tickets"("ticket_number");
+
+-- CreateIndex
 CREATE INDEX "traveler_information_booking_id_idx" ON "traveler_information"("booking_id");
 
 -- CreateIndex
 CREATE INDEX "trip_seats_trip_id_status_idx" ON "trip_seats"("trip_id", "status");
+
+-- CreateIndex
+CREATE INDEX "trip_seats_reservation_expiry_idx" ON "trip_seats"("reservation_expiry");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "trip_seats_trip_id_seat_id_key" ON "trip_seats"("trip_id", "seat_id");
@@ -267,10 +335,19 @@ CREATE UNIQUE INDEX "trip_seats_trip_id_seat_id_key" ON "trip_seats"("trip_id", 
 CREATE INDEX "trips_route_id_departure_time_idx" ON "trips"("route_id", "departure_time");
 
 -- CreateIndex
+CREATE INDEX "trips_bus_id_departure_time_idx" ON "trips"("bus_id", "departure_time");
+
+-- CreateIndex
+CREATE INDEX "trips_status_idx" ON "trips"("status");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "users_phone_key" ON "users"("phone");
+
+-- CreateIndex
+CREATE INDEX "users_status_idx" ON "users"("status");
 
 -- AddForeignKey
 ALTER TABLE "booking_seats" ADD CONSTRAINT "booking_seats_booking_id_fkey" FOREIGN KEY ("booking_id") REFERENCES "bookings"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

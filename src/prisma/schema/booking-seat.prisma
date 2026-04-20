@@ -1,13 +1,16 @@
 model BookingSeat {
-  id         String  @id @default(uuid())
-  bookingId  String  @map("booking_id")
-  tripSeatId String  @map("trip_seat_id")
-  travelerId String? @map("traveler_id")
+  id         String   @id @default(uuid())
+  bookingId  String   @map("booking_id")
+  tripSeatId String   @map("trip_seat_id")
+  travelerId String?  @map("traveler_id")
+  createdAt  DateTime @default(now()) @map("created_at")
 
   booking  Booking              @relation(fields: [bookingId], references: [id])
   tripSeat TripSeat             @relation(fields: [tripSeatId], references: [id])
   traveler TravelerInformation? @relation(fields: [travelerId], references: [id])
 
   @@unique([tripSeatId])
+  @@index([bookingId])
+  @@index([travelerId])
   @@map("booking_seats")
 }

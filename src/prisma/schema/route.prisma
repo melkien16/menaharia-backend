@@ -1,5 +1,6 @@
 model Route {
   id          String    @id @default(uuid())
+  code        String    @unique @map("code")
   origin      String
   destination String
   distance    Float

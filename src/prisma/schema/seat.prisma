@@ -4,10 +4,12 @@ model Seat {
   seatNumber String    @map("seat_number")
   seatType   seat_type @map("seat_type")
   createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
 
   bus       Bus        @relation(fields: [busId], references: [id])
   tripSeats TripSeat[]
 
   @@unique([busId, seatNumber])
+  @@index([busId])
   @@map("seats")
 }

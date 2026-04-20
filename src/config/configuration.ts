@@ -29,4 +29,15 @@ export default () => ({
     ttl: parseInt(process.env.RATE_LIMIT_TTL ?? '60', 10),
     limit: parseInt(process.env.RATE_LIMIT_LIMIT ?? '100', 10),
   },
+
+  booking: {
+    seatReservationMinutes: parseInt(
+      process.env.SEAT_RESERVATION_MINUTES ?? '10',
+      10,
+    ),
+    seatSweepIntervalMs: parseInt(
+      process.env.SEAT_SWEEP_INTERVAL_MS ?? '60000',
+      10,
+    ),
+  },
 });

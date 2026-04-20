@@ -4,7 +4,7 @@ model Bus {
   plateNumber String     @unique @map("plate_number")
   totalSeats  Int        @map("total_seats")
   make        String
-  status      bus_status
+  status      bus_status @default(ACTIVE)
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime   @updatedAt @map("updated_at")
   deletedAt   DateTime?  @map("deleted_at")
@@ -14,5 +14,6 @@ model Bus {
   trips    Trip[]
 
   @@index([operatorId])
+  @@index([status])
   @@map("buses")
 }

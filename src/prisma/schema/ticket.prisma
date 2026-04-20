@@ -1,8 +1,9 @@
 model Ticket {
-  id        String   @id @default(uuid())
-  bookingId String   @unique @map("booking_id")
-  qrCode    String   @map("qr_code")
-  issuedAt  DateTime @default(now()) @map("issued_at")
+  id           String   @id @default(uuid())
+  bookingId    String   @unique @map("booking_id")
+  ticketNumber String   @unique @map("ticket_number")
+  qrCode       String   @map("qr_code")
+  issuedAt     DateTime @default(now()) @map("issued_at")
 
   booking Booking @relation(fields: [bookingId], references: [id])
 

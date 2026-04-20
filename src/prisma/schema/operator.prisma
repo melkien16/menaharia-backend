@@ -1,14 +1,14 @@
 model Operator {
   id                String         @id @default(uuid())
   companyName       String         @map("company_name")
-  businessLicenseNo String         @map("business_license_no")
-  tinNo             String         @map("tin_no")
+  businessLicenseNo String         @unique @map("business_license_no")
+  tinNo             String         @unique @map("tin_no")
   phone             String
   address           String
-  status            partner_status
+  status            partner_status @default(ACTIVE)
   responsibleName   String         @map("responsible_name")
   companyPhone      String         @map("company_phone")
-  companyEmail      String         @map("company_email")
+  companyEmail      String         @unique @map("company_email")
   createdAt         DateTime       @default(now()) @map("created_at")
   updatedAt         DateTime       @updatedAt @map("updated_at")
   deletedAt         DateTime?      @map("deleted_at")
@@ -16,5 +16,6 @@ model Operator {
   buses Bus[]
 
   @@index([status])
+  @@index([deletedAt])
   @@map("transport_partners")
 }
