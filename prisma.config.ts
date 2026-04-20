@@ -1,13 +1,9 @@
-import { defineConfig } from '@prisma/config';
-import * as dotenv from 'dotenv';
-
-dotenv.config();
+import 'dotenv/config';
+import { defineConfig, env } from 'prisma/config';
 
 export default defineConfig({
-  engine: 'classic',
+  schema: './src/prisma/schema',
   datasource: {
-    url:
-      process.env.DATABASE_URL ??
-      'postgresql://postgres:postgres@localhost:5432/auth_starter?schema=public',
+    url: process.env.DATABASE_URL ?? env('DATABASE_URL'),
   },
 });
