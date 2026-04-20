@@ -11,6 +11,8 @@
     "src/common/fetch-query/**/*",
     "src/common/crud/**/*",
     "src/common/decorators/fetch-query.decorator.ts",
+    "src/common/authorization/decorators/vendor-owner.decorator.ts",
+    "src/common/authorization/guards/vendor-owner.guard.ts",
     "src/common/sms/**/*",
     "src/common/types/messages.type.ts",
     "src/common/utils/payment.service.ts",

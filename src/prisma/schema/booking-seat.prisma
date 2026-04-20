@@ -1,0 +1,13 @@
+model BookingSeat {
+  id         String  @id @default(uuid())
+  bookingId  String  @map("booking_id")
+  tripSeatId String  @map("trip_seat_id")
+  travelerId String? @map("traveler_id")
+
+  booking  Booking              @relation(fields: [bookingId], references: [id])
+  tripSeat TripSeat             @relation(fields: [tripSeatId], references: [id])
+  traveler TravelerInformation? @relation(fields: [travelerId], references: [id])
+
+  @@unique([tripSeatId])
+  @@map("booking_seats")
+}

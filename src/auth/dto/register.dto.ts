@@ -1,6 +1,5 @@
-import { GenderEnum } from '@prisma/client';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsEmail, IsString, MinLength } from 'class-validator';
 
 export class RegisterDto {
   @ApiProperty()
@@ -11,14 +10,9 @@ export class RegisterDto {
   @IsString()
   phone: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
+  @ApiProperty()
   @IsEmail()
-  email?: string;
-
-  @ApiProperty({ enum: GenderEnum })
-  @IsEnum(GenderEnum)
-  gender: GenderEnum;
+  email: string;
 
   @ApiProperty({ minLength: 8 })
   @IsString()

@@ -1,0 +1,18 @@
+model Bus {
+  id          String     @id @default(uuid())
+  operatorId  String     @map("operator_id")
+  plateNumber String     @unique @map("plate_number")
+  totalSeats  Int        @map("total_seats")
+  make        String
+  status      bus_status
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  deletedAt   DateTime?  @map("deleted_at")
+
+  operator Operator @relation(fields: [operatorId], references: [id])
+  seats    Seat[]
+  trips    Trip[]
+
+  @@index([operatorId])
+  @@map("buses")
+}

@@ -10,41 +10,6 @@ export class PrismaService
   private readonly als = new AsyncLocalStorage<PrismaClient>();
   private readonly logger = new Logger('prisma');
 
-  // Special flag to bypass the global soft-delete filter.
-  // Usage:
-  //    prisma.user.findMany({ where: { /* ...  }, includeDeleted: true } as any)
-  private static readonly INCLUDE_DELETED_FLAG = 'includeDeleted';
-
-  // Models that don't have soft delete (deletedAt field)
-  private static readonly MODELS_WITHOUT_SOFT_DELETE = [
-    'AuditLog',
-    'PricingConfig',
-    'PricingZone',
-    'InterCityPricing',
-  ];
-
-  private static addSoftDeleteWhere<TArgs extends { where?: any }>(
-    args: TArgs,
-    modelName?: string,
-  ): TArgs {
-    // Skip if model doesn't support soft delete
-    if (modelName && this.MODELS_WITHOUT_SOFT_DELETE.includes(modelName)) {
-      return args;
-    }
-
-    const includeDeleted = Boolean((args as any)?.[PrismaService.INCLUDE_DELETED_FLAG]);
-    if (includeDeleted) {
-      delete (args as any)[PrismaService.INCLUDE_DELETED_FLAG];
-      return args;
-    }
-
-    const where = args?.where ?? {};
-    return {
-      ...args,
-      where: { AND: [where, { deletedAt: null }] },
-    };
-  }
-
   constructor() {
     super({
       log: [
@@ -70,34 +35,9 @@ export class PrismaService
     this.$on('warn', (e) => this.logger.warn(e.message));
     this.$on('info', (e) => this.logger.log(e.message));
 
-    const extended = this.$extends({
-      query: {
-        $allModels: {
-          findFirst({ args, query, model }: any) {
-            return query(PrismaService.addSoftDeleteWhere(args, model));
-          },
-          findFirstOrThrow({ args, query, model }: any) {
-            return query(PrismaService.addSoftDeleteWhere(args, model));
-          },
-          findMany({ args, query, model }: any) {
-            return query(PrismaService.addSoftDeleteWhere(args, model));
-          },
-          count({ args, query, model }: any) {
-            return query(PrismaService.addSoftDeleteWhere(args, model));
-          },
-          aggregate({ args, query, model }: any) {
-            return query(PrismaService.addSoftDeleteWhere(args, model));
-          },
-          groupBy({ args, query, model }: any) {
-            return query(PrismaService.addSoftDeleteWhere(args, model));
-          },
-        },
-      },
-    });
-
     return new Proxy(this, {
       get: (target, prop) => {
-        const tx = target.als.getStore() || (extended as any);
+        const tx = target.als.getStore() || target;
         const value = Reflect.get(tx, prop, tx);
         return typeof value === 'function' ? value.bind(tx) : value;
       },

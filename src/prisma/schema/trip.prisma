@@ -1,0 +1,20 @@
+model Trip {
+  id            String      @id @default(uuid())
+  routeId       String      @map("route_id")
+  busId         String      @map("bus_id")
+  departureTime DateTime    @map("departure_time")
+  arrivalTime   DateTime    @map("arrival_time")
+  price         Float
+  status        trip_status
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  deletedAt     DateTime?   @map("deleted_at")
+
+  route     Route      @relation(fields: [routeId], references: [id])
+  bus       Bus        @relation(fields: [busId], references: [id])
+  bookings  Booking[]
+  tripSeats TripSeat[]
+
+  @@index([routeId, departureTime])
+  @@map("trips")
+}

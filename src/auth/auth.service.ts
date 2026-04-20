@@ -5,12 +5,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import {
-  AccountStatusEnum,
-  GenderEnum,
-  RoleTypeEnum,
-  UserVerificationStatusEnum,
-} from '@prisma/client';
+import { user_status } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
@@ -46,13 +41,10 @@ export class AuthService {
     const user = await this.prisma.user.create({
       data: {
         fullName: dto.fullName.trim(),
-        email,
+        email: email!,
         phone,
-        passwordHash,
-        gender: dto.gender,
-        accountStatus: AccountStatusEnum.active,
-        verificationStatus: UserVerificationStatusEnum.pending,
-        emailVerificationStatus: email ? 'pending' : 'not_applicable',
+        password: passwordHash,
+        status: user_status.ACTIVE,
         roles: {
           create: {
             roleId: defaultRole.id,
@@ -64,6 +56,8 @@ export class AuthService {
         email: true,
         phone: true,
         fullName: true,
+        status: true,
+        deletedAt: true,
         roles: {
           select: {
             role: {
@@ -99,9 +93,9 @@ export class AuthService {
         email: true,
         phone: true,
         fullName: true,
-        passwordHash: true,
+        password: true,
         deletedAt: true,
-        accountStatus: true,
+        status: true,
         roles: {
           select: {
             role: {
@@ -118,21 +112,14 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const passwordMatches = await bcrypt.compare(dto.password, user.passwordHash);
+    const passwordMatches = await bcrypt.compare(dto.password, user.password);
     if (!passwordMatches) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    if (user.accountStatus !== AccountStatusEnum.active) {
+    if (user.status !== user_status.ACTIVE) {
       throw new UnauthorizedException('Account is not active');
     }
-
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        lastLogin: new Date(),
-      },
-    });
 
     return this.buildAuthResponse({
       id: user.id,
@@ -216,10 +203,8 @@ export class AuthService {
         email: true,
         phone: true,
         fullName: true,
-        accountStatus: true,
-        verificationStatus: true,
-        emailVerificationStatus: true,
-        gender: true,
+        status: true,
+        deletedAt: true,
         createdAt: true,
         updatedAt: true,
         roles: {
@@ -234,7 +219,7 @@ export class AuthService {
       },
     });
 
-    if (!user) {
+    if (!user || user.deletedAt) {
       throw new UnauthorizedException('User not found');
     }
 
@@ -373,7 +358,6 @@ export class AuthService {
       update: {},
       create: {
         name: SystemRolesEnum.USER,
-        type: RoleTypeEnum.system,
       },
       select: {
         id: true,

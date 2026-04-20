@@ -1,0 +1,14 @@
+model TravelerInformation {
+  id               String   @id @default(uuid())
+  bookingId        String   @map("booking_id")
+  fullName         String   @map("full_name")
+  email            String
+  phone            String
+  emergencyContact String   @map("emergency_contact")
+
+  booking      Booking       @relation(fields: [bookingId], references: [id])
+  bookingSeats BookingSeat[]
+
+  @@index([bookingId])
+  @@map("traveler_information")
+}

@@ -1,0 +1,52 @@
+enum user_status {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum partner_status {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum bus_status {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum trip_status {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum seat_status {
+  AVAILABLE
+  RESERVED
+  BOOKED
+}
+
+enum booking_status {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum payment_status {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum payment_method {
+  TELEBIRR
+  CBE
+  CHAPA
+}
+
+enum seat_type {
+  VIP
+  STANDARD
+}

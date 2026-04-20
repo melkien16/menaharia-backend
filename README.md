@@ -61,7 +61,6 @@ curl -X POST http://localhost:3002/v1/auth/register \
     "fullName": "Starter User",
     "phone": "+251900000000",
     "email": "starter@example.com",
-    "gender": "male",
     "password": "password123"
   }'
 ```
