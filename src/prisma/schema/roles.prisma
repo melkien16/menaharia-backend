@@ -1,0 +1,16 @@
+enum RoleTypeEnum {
+  system
+  custom
+}
+
+model Role {
+  id        String       @id @default(uuid()) @db.Uuid
+  name      String       @unique @db.VarChar(50)
+  type      RoleTypeEnum @default(system)
+  createdAt DateTime     @default(now())
+  deletedAt DateTime?
+
+  users UserRole[] @relation("RoleToUserRole")
+
+  @@map("roles")
+}

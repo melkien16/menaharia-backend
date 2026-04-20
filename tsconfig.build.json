@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "exclude": [
+    "node_modules",
+    "test",
+    "dist",
+    "**/*spec.ts",
+    "src/common/bullmq/**/*",
+    "src/common/payment/**/*",
+    "src/common/seed/**/*",
+    "src/common/fetch-query/**/*",
+    "src/common/crud/**/*",
+    "src/common/decorators/fetch-query.decorator.ts",
+    "src/common/sms/**/*",
+    "src/common/types/messages.type.ts",
+    "src/common/utils/payment.service.ts",
+    "src/common/utils/price-engine.service.ts",
+    "src/config copy/**/*",
+    "README.Old.md"
+  ]
+}

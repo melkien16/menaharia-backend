@@ -1,0 +1,12 @@
+model UserRole {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @db.Uuid
+  roleId      String    @db.Uuid
+  assigned_at DateTime  @default(now())
+  deletedAt   DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, name: "UserToUserRole")
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade, name: "RoleToUserRole")
+
+  @@map("user_roles")
+}

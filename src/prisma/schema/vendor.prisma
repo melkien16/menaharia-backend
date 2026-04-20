@@ -1,0 +1,74 @@
+enum VendorStatusEnum {
+  draft
+  active
+  inactive
+}
+
+enum VendorVerificationStatusEnum {
+  pending
+  approved
+  rejected
+}
+
+model Vendor {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @unique @db.Uuid
+
+  // Business Information - matching UI model
+  storeName          String  @db.VarChar(255) // storeName from UI
+  businessType       String  @db.VarChar(100) // businessType from UI
+  registrationNumber String? @db.VarChar(100) // registrationNumber from UI
+  category           String  @db.VarChar(100) // category from UI
+
+  // Address Information
+  address String? @db.Text
+  region  String  @db.VarChar(100) // region from UI
+  city    String? @db.VarChar(100)
+  subCity String? @db.VarChar(100) // subCity from UI
+  woreda  String? @db.VarChar(50) // woreda from UI
+
+  // Operating Hours
+  startTime String? @db.VarChar(10) // startTime from UI (e.g., "08:00")
+  endTime   String? @db.VarChar(10) // endTime from UI (e.g., "20:00")
+
+  // Location (PostGIS)
+  // location Unsupported("geography(Point, 4326)")?
+
+  // Bank Account Information for Payouts (FR-12)
+  accountHolderName String? @db.VarChar(255) // accountHolderName from UI
+  accountNumber     String? @db.VarChar(100) // accountNumber from UI
+  bankName          String? @db.VarChar(100) // bankName from UI
+
+  // Document URLs
+  businessLicensePath String? @db.Text // businessLicensePath from UI
+  taxCertificatePath  String? @db.Text // taxCertificatePath from UI
+  ownerIdPath         String? @db.Text // ownerIdPath from UI
+
+  // Status fields
+  status             VendorStatusEnum             @default(draft)
+  verificationStatus VendorVerificationStatusEnum @default(pending)
+  approvedById       String?                      @db.Uuid
+  approvedAt         DateTime?
+
+  // Business metrics
+  commissionRate      Decimal? @default(0.00) @db.Decimal(5, 2)
+  preparationTimeHour Int      @default(1)
+  rating              Decimal  @default(0) @db.Decimal(3, 2)
+  isActive            Boolean  @default(false)
+  isNobleFirstParty   Boolean  @default(false)
+
+  // Timestamps
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  // Relations
+  user           User                  @relation("UserToVendor", fields: [userId], references: [id])
+  approvedBy     User?                 @relation("UserAsApprover", fields: [approvedById], references: [id])
+  paymentMethods VendorPaymentMethod[]
+  products       Product[]
+  orderItems     OrderItem[]
+  transactions   Transaction[]
+
+  @@map("vendors")
+}

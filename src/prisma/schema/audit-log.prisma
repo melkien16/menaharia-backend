@@ -1,0 +1,21 @@
+// Audit Log Schema for tracking admin and system actions
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String?  @db.Uuid
+  userName  String?  @db.VarChar(255)
+  action    String   @db.VarChar(100)
+  module    String   @db.VarChar(100)
+  details   String?  @db.Text
+  ipAddress String?  @db.VarChar(45)
+  userAgent String?  @db.Text
+  createdAt DateTime @default(now())
+
+  user User? @relation("UserToAuditLog", fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([action])
+  @@index([module])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

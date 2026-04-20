@@ -1,0 +1,27 @@
+enum VehicleTypeEnum {
+  bike
+  motor_bike
+  car
+  van
+  truck
+}
+
+enum OwnerTypeEnum {
+  company
+  external
+}
+
+model Vehicle {
+  id          String          @id @default(uuid()) @db.Uuid
+  plateNumber String          @unique @db.VarChar(20)
+  type        VehicleTypeEnum
+  capacityKg  Int
+  ownerType   OwnerTypeEnum
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  deletedAt   DateTime?
+
+  assignments DriverVehicleAssignment[]
+
+  @@map("vehicles")
+}

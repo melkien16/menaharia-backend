@@ -1,0 +1,21 @@
+import { PaymentMethodEnum } from '@prisma/client';
+import { PaymentWebhookScenariosEnum } from 'src/common/enums/shared/payment.enum';
+
+export type PaymentConfig = {
+  chapa?: {
+    apiUrl?: string;
+    publicKey?: string;
+    secretKey?: string;
+    encryptionKey?: string;
+  };
+};
+
+export type InitiatePaymentPayload = {
+  orderId?: string;
+  courierRequestId?: string;
+  userId: string;
+  amount: string;
+  paymentMethod: PaymentMethodEnum;
+  paymentType: PaymentWebhookScenariosEnum;
+  returnUrl?: string;
+};

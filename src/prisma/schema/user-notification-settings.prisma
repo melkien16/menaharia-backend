@@ -1,0 +1,30 @@
+enum NotificationQuietHoursStatusEnum {
+  enabled
+  disabled
+}
+
+model UserNotificationSettings {
+  id String @id @default(uuid()) @db.Uuid
+
+  userId String @unique @db.Uuid
+
+  // Quiet hours are stored as "minutes from midnight" to avoid timezone complexity.
+  // Quiet hours apply daily and use the server's timezone (see docs in Notification module).
+  quietHoursEnabled     Boolean @default(true)
+  quietHoursStartMinute Int     @default(1320) // 22:00
+  quietHoursEndMinute   Int     @default(480) // 08:00
+
+  // Stored for future timezone-aware logic.
+  timezone String @default("UTC")
+
+  // Default channel preference when there's no per-type preference row.
+  pushEnabledDefault Boolean @default(true)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_notification_settings")
+}

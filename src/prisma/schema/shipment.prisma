@@ -1,0 +1,55 @@
+enum ShipmentSourceEnum {
+  marketplace
+  pure_courier
+}
+
+enum ShipmentStatusEnum {
+  requested
+  assigned
+  picked_up
+  at_origin_hub
+  in_transit_intercity
+  at_destination_hub
+  out_for_delivery
+  completed
+  cancelled
+}
+
+enum ShipmentPriorityEnum {
+  normal
+  express
+  urgent
+}
+
+model Shipment {
+  id                  String    @id @default(uuid()) @db.Uuid
+  orderId             String?   @db.Uuid
+  shipmentSource      String
+  status              String
+  isInterCity         Boolean   @default(false)
+  eta                 DateTime?
+  originHubId         String?   @db.Uuid
+  destinationHubId    String?   @db.Uuid
+  agentId             String?   @db.Uuid // For external agent deliveries
+  currentLegId        String?   @db.Uuid
+  estimatedDistanceKm Decimal?  @db.Decimal(8, 2)
+  actualDeliveryTime  DateTime?
+  priority            String
+  deliveryFee         Decimal?  @db.Decimal(12, 2)
+  commissionAmount    Decimal?  @db.Decimal(12, 2)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  deletedAt           DateTime?
+
+  order          Order?         @relation(fields: [orderId], references: [id])
+  originHub      Hub?           @relation("OriginHubToShipment", fields: [originHubId], references: [id])
+  destinationHub Hub?           @relation("DestinationHubToShipment", fields: [destinationHubId], references: [id])
+  agent          ExternalAgent? @relation("AgentShipments", fields: [agentId], references: [id])
+  currentLeg     ShipmentLeg?   @relation("CurrentLegToShipment", fields: [currentLegId], references: [id])
+
+  parties ShipmentParty[]
+  items   ShipmentItem[]
+  legs    ShipmentLeg[]   @relation("ShipmentToLegs")
+
+  @@map("shipments")
+}

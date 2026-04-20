@@ -1,0 +1,43 @@
+enum NotificationDeliveryChannelEnum {
+  push
+}
+
+enum NotificationDeliveryStatusEnum {
+  queued
+  sent
+  failed
+  skipped
+}
+
+model NotificationDelivery {
+  id String @id @default(uuid()) @db.Uuid
+
+  userId           String                          @db.Uuid
+  notificationType String
+  channel          NotificationDeliveryChannelEnum @default(push)
+  language         String                          @default("en")
+
+  title String
+  body  String
+  data  Json?
+
+  // Helps quiet-hours deferral and ops visibility.
+  scheduledAt DateTime
+  status      NotificationDeliveryStatusEnum @default(queued)
+
+  providerMessageId String?
+  lastError         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sentAt   DateTime?
+  failedAt DateTime?
+
+  deletedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@map("notification_deliveries")
+}

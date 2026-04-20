@@ -1,0 +1,63 @@
+enum AccountStatusEnum {
+  active
+  suspended
+  locked
+  deleted
+  pending
+}
+
+enum UserVerificationStatusEnum {
+  pending
+  verified
+  rejected
+}
+
+enum GenderEnum {
+  male
+  female
+}
+
+model User {
+  id                      String            @id @default(uuid()) @db.Uuid
+  phone                   String            @unique
+  email                   String?           @unique
+  fullName                String
+  passwordHash            String
+  accountStatus           AccountStatusEnum @default(active)
+  verificationStatus      String            @default("pending")
+  emailVerificationStatus String            @default("pending")
+  gender                  GenderEnum
+  addressText             String?
+  defaultLocation         Bytes?
+  nationalIdNo            String?           @unique
+  verifiedAt              DateTime?
+  lastLogin               DateTime?
+  language                String            @default("en")
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+  deletedAt               DateTime?
+
+  roles                       UserRole[]                       @relation("UserToUserRole")
+  refreshTokens               RefreshToken[]
+  otps                        UserOtp[]
+  vendor                      Vendor?                          @relation("UserToVendor")
+  approvedVendors             Vendor[]                         @relation("UserAsApprover")
+  orders                      Order[]                          @relation("CustomerToOrder")
+  cancelledOrders             Order[]                          @relation("CancelledByToOrder")
+  transactions                Transaction[]                    @relation("UserToTransactions")
+  shipmentParties             ShipmentParty[]
+  driver                      Driver?                          @relation("UserToDriver")
+  vehicleAssignmentsBy        DriverVehicleAssignment[]        @relation("AssignedByToVehicleAssignment")
+  auditLogs                   AuditLog[]                       @relation("UserToAuditLog")
+  hub                         Hub?                             @relation("HubToStaff")
+  cartItems                   CartItem[]                       @relation("CustomerToCart")
+  wishlist                    WishlistItem[]                   @relation("CustomerToWishlist")
+  addresses                   UserAddress[]                    @relation("UserToAddresses")
+  externalAgents              ExternalAgent[]                  @relation("UserToExternalAgent")
+  fcmTokens                   FcmToken[]
+  notificationSettings        UserNotificationSettings?
+  notificationTypePreferences UserNotificationTypePreference[]
+  notificationDeliveries      NotificationDelivery[]
+
+  @@map("users")
+}

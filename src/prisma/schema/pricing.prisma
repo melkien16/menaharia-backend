@@ -1,0 +1,73 @@
+// Pricing Configuration Schema
+// Stores pricing rules for delivery cost calculations
+
+enum PricingTypeEnum {
+  base // Base fee
+  per_km // Per kilometer rate
+  per_kg // Per kilogram rate
+  priority // Priority multiplier
+  intercity // Inter-city additional fee
+  driver_commission // External driver platform commission (%)
+  agent_commission // External agent commission (%)
+  vendor_commission // Vendor platform commission (%)
+}
+
+enum VehicleCategoryEnum {
+  bike
+  motorbike
+  car
+  van
+  truck
+}
+
+model PricingConfig {
+  id                 String               @id @default(uuid()) @db.Uuid
+  type               PricingTypeEnum
+  vehicleCategory    VehicleCategoryEnum?
+  zoneCode           String?              @db.VarChar(50) // null = default zone
+  amount             Decimal              @db.Decimal(10, 2)
+  minAmount          Decimal?             @db.Decimal(10, 2) // Minimum fee
+  maxAmount          Decimal?             @db.Decimal(10, 2) // Maximum fee (for cap)
+  priorityMultiplier Decimal?             @db.Decimal(5, 2) // e.g., 1.5 for urgent
+  isActive           Boolean              @default(true)
+  validFrom          DateTime?
+  validTo            DateTime?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  @@unique([type, vehicleCategory, zoneCode])
+  @@map("pricing_configs")
+}
+
+model Zone {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(100)
+  code        String   @unique @db.VarChar(50)
+  description String?  @db.Text
+  // Polygon boundary for the zone (optional)
+  boundary    Unsupported("geography(Polygon, 4326)")?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("zones")
+}
+
+// Inter-city pricing between hubs
+model InterCityPricing {
+  id               String   @id @default(uuid()) @db.Uuid
+  originHubId      String   @db.Uuid
+  destinationHubId String   @db.Uuid
+  basePrice        Decimal  @db.Decimal(10, 2)
+  pricePerKg       Decimal  @db.Decimal(8, 2)
+  estimatedDays    Int      @default(1)
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  originHub      Hub @relation("OriginCityPricing", fields: [originHubId], references: [id])
+  destinationHub Hub @relation("DestinationCityPricing", fields: [destinationHubId], references: [id])
+
+  @@unique([originHubId, destinationHubId])
+  @@map("inter_city_pricing")
+}
