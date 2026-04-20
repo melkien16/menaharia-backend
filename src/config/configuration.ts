@@ -2,7 +2,7 @@ export default () => ({
   app: {
     name: process.env.APP_NAME || 'Noble Lemat Delivery And Marketplace API',
     env: process.env.NODE_ENV || 'development',
-    port: Number(process.env.PORT),
+    port: parseInt(process.env.PORT || '3000', 10),
   },
 
   database: {
@@ -31,13 +31,7 @@ export default () => ({
   },
 
   booking: {
-    seatReservationMinutes: parseInt(
-      process.env.SEAT_RESERVATION_MINUTES ?? '10',
-      10,
-    ),
-    seatSweepIntervalMs: parseInt(
-      process.env.SEAT_SWEEP_INTERVAL_MS ?? '60000',
-      10,
-    ),
+    seatReservationMinutes: parseInt(process.env.SEAT_RESERVATION_MINUTES ?? '10', 10),
+    seatSweepIntervalMs: parseInt(process.env.SEAT_SWEEP_INTERVAL_MS ?? '60000', 10),
   },
 });
