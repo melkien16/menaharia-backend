@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { AsyncLocalStorage } from 'async_hooks';
+import { getDatabaseUrl } from './prisma-url';
 
 @Injectable()
 export class PrismaService
@@ -13,7 +14,7 @@ export class PrismaService
   private readonly connectionString: string;
 
   constructor() {
-    const connectionString = process.env.DATABASE_URL;
+    const connectionString = getDatabaseUrl();
 
     if (!connectionString) {
       throw new Error('DATABASE_URL is required to initialize Prisma');
@@ -27,7 +28,7 @@ export class PrismaService
         { emit: 'event', level: 'info' },
         { emit: 'event', level: 'warn' },
       ],
-    });
+    } as Prisma.PrismaClientOptions);
 
     this.connectionString = connectionString;
 
@@ -97,7 +98,7 @@ export class PrismaService
 
     return new PrismaClient({
       adapter: new PrismaPg({ connectionString: this.connectionString }),
-    });
+    } as Prisma.PrismaClientOptions);
   }
 
   async onModuleDestroy() {
