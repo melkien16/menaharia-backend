@@ -81,6 +81,26 @@ export class TripService {
       deletedAt: null,
       ...(query.status ? { status: query.status } : {}),
       ...dateFilter,
+      ...(query.routeSearch
+        ? {
+            route: {
+              OR: [
+                {
+                  origin: {
+                    contains: query.routeSearch.trim(),
+                    mode: 'insensitive',
+                  },
+                },
+                {
+                  destination: {
+                    contains: query.routeSearch.trim(),
+                    mode: 'insensitive',
+                  },
+                },
+              ],
+            },
+          }
+        : {}),
       ...(query.origin || query.destination
         ? {
             route: {

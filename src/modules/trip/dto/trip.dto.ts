@@ -57,6 +57,11 @@ export class UpdateTripDto extends PartialType(CreateTripDto) {}
 export class TripQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional()
   @IsOptional()
+  @IsString()
+  routeSearch?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsDateString()
   date?: string;
 
