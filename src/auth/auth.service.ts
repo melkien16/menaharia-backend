@@ -20,6 +20,8 @@ import { SystemRolesEnum } from 'src/common/enums/users/roles.enum';
 import { CurrentUserDto } from 'src/common/dtos/current-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class AuthService {
@@ -196,26 +198,38 @@ export class AuthService {
   }
 
   async getMe(userId: string) {
+    const user = await this.getProfileById(userId);
+
+    return user;
+  }
+
+  async updateMe(userId: string, dto: UpdateProfileDto) {
+    const email = this.normalizeOptionalEmail(dto.email);
+    const phone = dto.phone?.trim();
+
+    if (email || phone) {
+      await this.ensureUserProfileValuesAvailable(userId, { email, phone });
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(dto.fullName ? { fullName: dto.fullName.trim() } : {}),
+        ...(email ? { email } : {}),
+        ...(phone ? { phone } : {}),
+      },
+    });
+
+    return this.getProfileById(userId);
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
-        email: true,
-        phone: true,
-        fullName: true,
-        status: true,
+        password: true,
         deletedAt: true,
-        createdAt: true,
-        updatedAt: true,
-        roles: {
-          select: {
-            role: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
       },
     });
 
@@ -223,9 +237,30 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
+    const currentPasswordMatches = await bcrypt.compare(dto.currentPassword, user.password);
+
+    if (!currentPasswordMatches) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    const passwordHash = await bcrypt.hash(dto.newPassword, 10);
+
+    await this.prisma.runInTransaction(async () => {
+      const tx = this.prisma.tx;
+
+      await tx.user.update({
+        where: { id: userId },
+        data: { password: passwordHash },
+      });
+
+      await tx.refreshToken.updateMany({
+        where: { userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+    });
+
     return {
-      ...user,
-      roles: user.roles.map(({ role }) => role.name),
+      message: 'Password changed successfully',
     };
   }
 
@@ -326,6 +361,40 @@ export class AuthService {
     };
   }
 
+  private async getProfileById(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        fullName: true,
+        status: true,
+        deletedAt: true,
+        createdAt: true,
+        updatedAt: true,
+        roles: {
+          select: {
+            role: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!user || user.deletedAt) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    return {
+      ...user,
+      roles: user.roles.map(({ role }) => role.name),
+    };
+  }
+
   private async ensureUserDoesNotExist({
     email,
     phone,
@@ -349,6 +418,33 @@ export class AuthService {
     });
     if (existingPhone) {
       throw new ConflictException('Phone is already registered');
+    }
+  }
+
+  private async ensureUserProfileValuesAvailable(
+    userId: string,
+    values: { email?: string | null; phone?: string | null },
+  ) {
+    if (values.email) {
+      const existingEmail = await this.prisma.user.findUnique({
+        where: { email: values.email },
+        select: { id: true },
+      });
+
+      if (existingEmail && existingEmail.id !== userId) {
+        throw new ConflictException('Email is already registered');
+      }
+    }
+
+    if (values.phone) {
+      const existingPhone = await this.prisma.user.findUnique({
+        where: { phone: values.phone },
+        select: { id: true },
+      });
+
+      if (existingPhone && existingPhone.id !== userId) {
+        throw new ConflictException('Phone is already registered');
+      }
     }
   }
 

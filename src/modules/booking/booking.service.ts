@@ -3,6 +3,7 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { Prisma, booking_status, payment_status, seat_status } from '@prisma/client';
@@ -240,6 +241,71 @@ export class BookingService {
     }
 
     return booking;
+  }
+
+  async cancelBooking(id: string, currentUser?: CurrentUserDto) {
+    const booking = await this.prisma.booking.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+        ...(currentUser && !this.isAdmin(currentUser) ? { userId: currentUser.id } : {}),
+      },
+      include: {
+        payment: true,
+        bookingSeats: {
+          include: {
+            tripSeat: true,
+          },
+        },
+      },
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    if (booking.status === booking_status.CANCELLED) {
+      return booking;
+    }
+
+    const cancelledBooking = await this.prisma.runInTransaction(async () => {
+      const tx = this.prisma.tx;
+
+      await tx.tripSeat.updateMany({
+        where: {
+          id: {
+            in: booking.bookingSeats.map((bookingSeat) => bookingSeat.tripSeatId),
+          },
+        },
+        data: {
+          status: seat_status.AVAILABLE,
+          reservedAt: null,
+          reservationExpiry: null,
+          bookedAt: null,
+        },
+      });
+
+      const updatedBooking = await tx.booking.update({
+        where: { id: booking.id },
+        data: {
+          status: booking_status.CANCELLED,
+          reservedUntil: null,
+        },
+      });
+
+      if (booking.payment?.status === payment_status.PENDING) {
+        await tx.payment.update({
+          where: { bookingId: booking.id },
+          data: {
+            status: payment_status.FAILED,
+          },
+        });
+      }
+
+      return updatedBooking;
+    });
+
+    return cancelledBooking;
   }
 
   private generateBookingReference() {

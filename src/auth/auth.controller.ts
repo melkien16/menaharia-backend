@@ -1,9 +1,10 @@
 import {
   Body,
   Controller,
-  Get,
   HttpCode,
   HttpStatus,
+  Get,
+  Patch,
   Post,
   UseGuards,
   Version,
@@ -15,8 +16,10 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { CurrentUserDto } from 'src/common/dtos/current-user.dto';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @ApiTags('auth')
 @Controller({ path: 'auth', version: '1' })
@@ -44,10 +47,7 @@ export class AuthController {
   @UseGuards(RefreshTokenGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refresh access and refresh tokens' })
-  refresh(
-    @CurrentUser() user: CurrentUserDto,
-    @Body() dto: RefreshTokenDto,
-  ) {
+  refresh(@CurrentUser() user: CurrentUserDto, @Body() dto: RefreshTokenDto) {
     return this.authService.refresh(user, dto.refreshToken);
   }
 
@@ -56,10 +56,7 @@ export class AuthController {
   @UseGuards(RefreshTokenGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Revoke the current refresh token' })
-  logout(
-    @CurrentUser() user: CurrentUserDto,
-    @Body() dto: RefreshTokenDto,
-  ) {
+  logout(@CurrentUser() user: CurrentUserDto, @Body() dto: RefreshTokenDto) {
     return this.authService.logout(user, dto.refreshToken);
   }
 
@@ -68,5 +65,20 @@ export class AuthController {
   @ApiOperation({ summary: 'Get the authenticated user profile' })
   me(@CurrentUser() user: CurrentUserDto) {
     return this.authService.getMe(user.id);
+  }
+
+  @Patch('me')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update the authenticated user profile' })
+  updateMe(@CurrentUser() user: CurrentUserDto, @Body() dto: UpdateProfileDto) {
+    return this.authService.updateMe(user.id, dto);
+  }
+
+  @Post('change-password')
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Change the authenticated user password' })
+  changePassword(@CurrentUser() user: CurrentUserDto, @Body() dto: ChangePasswordDto) {
+    return this.authService.changePassword(user.id, dto);
   }
 }

@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Version } fro
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Roles } from 'src/common/authorization/decorators/roles.decorator';
 import { SystemRolesEnum } from 'src/common/enums/users/roles.enum';
+import { AdminDashboardQueryDto } from '../admin/dto/admin.dto';
 import { CreateOperatorDto, OperatorQueryDto, UpdateOperatorDto } from './dto/operator.dto';
 import { OperatorService } from './operator.service';
 
@@ -28,6 +29,12 @@ export class OperatorController {
   @ApiOperation({ summary: 'Get transport operator by id' })
   getById(@Param('id') id: string) {
     return this.operatorService.getById(id);
+  }
+
+  @Get(':id/dashboard')
+  @ApiOperation({ summary: 'Get operator dashboard metrics' })
+  dashboard(@Param('id') id: string, @Query() query: AdminDashboardQueryDto) {
+    return this.operatorService.dashboard(id, query);
   }
 
   @Patch(':id')

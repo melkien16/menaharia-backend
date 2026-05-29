@@ -1,6 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, partner_status } from '@prisma/client';
+import {
+  Prisma,
+  booking_status,
+  payment_status,
+  partner_status,
+  seat_status,
+  trip_status,
+} from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { AdminDashboardQueryDto } from '../admin/dto/admin.dto';
 import { CreateOperatorDto, OperatorQueryDto, UpdateOperatorDto } from './dto/operator.dto';
 
 @Injectable()
@@ -116,6 +124,135 @@ export class OperatorService {
       ...operator,
       previousRoutes,
       upcomingTrips,
+    };
+  }
+
+  async dashboard(operatorId: string, query: AdminDashboardQueryDto) {
+    await this.ensureExists(operatorId);
+
+    const createdAtFilter =
+      query.from || query.to
+        ? {
+            createdAt: {
+              ...(query.from ? { gte: new Date(query.from) } : {}),
+              ...(query.to ? { lte: new Date(query.to) } : {}),
+            },
+          }
+        : {};
+
+    const [
+      buses,
+      trips,
+      pendingBookings,
+      confirmedBookings,
+      cancelledBookings,
+      successfulPayments,
+      totalSeats,
+      bookedSeats,
+      reservedSeats,
+      completedTrips,
+      cancelledTrips,
+    ] = await Promise.all([
+      this.prisma.bus.count({ where: { operatorId, deletedAt: null, ...createdAtFilter } }),
+      this.prisma.trip.count({
+        where: {
+          deletedAt: null,
+          bus: { operatorId },
+          ...createdAtFilter,
+        },
+      }),
+      this.prisma.booking.count({
+        where: {
+          deletedAt: null,
+          status: booking_status.PENDING,
+          trip: { bus: { operatorId } },
+          ...createdAtFilter,
+        },
+      }),
+      this.prisma.booking.count({
+        where: {
+          deletedAt: null,
+          status: booking_status.CONFIRMED,
+          trip: { bus: { operatorId } },
+          ...createdAtFilter,
+        },
+      }),
+      this.prisma.booking.count({
+        where: {
+          deletedAt: null,
+          status: booking_status.CANCELLED,
+          trip: { bus: { operatorId } },
+          ...createdAtFilter,
+        },
+      }),
+      this.prisma.payment.aggregate({
+        _sum: { amount: true },
+        where: {
+          status: payment_status.SUCCESS,
+          booking: {
+            trip: { bus: { operatorId } },
+          },
+          ...createdAtFilter,
+        },
+      }),
+      this.prisma.bus.aggregate({
+        _sum: { totalSeats: true },
+        where: { operatorId, deletedAt: null },
+      }),
+      this.prisma.tripSeat.count({
+        where: {
+          status: seat_status.BOOKED,
+          trip: { bus: { operatorId } },
+        },
+      }),
+      this.prisma.tripSeat.count({
+        where: {
+          status: seat_status.RESERVED,
+          trip: { bus: { operatorId } },
+        },
+      }),
+      this.prisma.trip.count({
+        where: {
+          deletedAt: null,
+          status: trip_status.COMPLETED,
+          bus: { operatorId },
+          ...createdAtFilter,
+        },
+      }),
+      this.prisma.trip.count({
+        where: {
+          deletedAt: null,
+          status: trip_status.CANCELLED,
+          bus: { operatorId },
+          ...createdAtFilter,
+        },
+      }),
+    ]);
+
+    const totalSeatsCount = totalSeats._sum.totalSeats ?? 0;
+    const seatsBooked = bookedSeats;
+    const occupancyRate = totalSeatsCount > 0 ? (seatsBooked / totalSeatsCount) * 100 : 0;
+
+    return {
+      operatorId,
+      overview: {
+        buses,
+        trips,
+        completedTrips,
+        cancelledTrips,
+        bookings: {
+          pending: pendingBookings,
+          confirmed: confirmedBookings,
+          cancelled: cancelledBookings,
+        },
+        revenue: successfulPayments._sum.amount ?? 0,
+        seats: {
+          total: totalSeatsCount,
+          booked: seatsBooked,
+          reserved: reservedSeats,
+          occupancyRate,
+        },
+      },
     };
   }
 

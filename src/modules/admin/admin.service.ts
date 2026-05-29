@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { booking_status, payment_status, seat_status } from '@prisma/client';
+import { booking_status, payment_status, seat_status, trip_status } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AdminDashboardQueryDto } from './dto/admin.dto';
 
@@ -26,9 +26,13 @@ export class AdminService {
       trips,
       pendingBookings,
       confirmedBookings,
+      cancelledBookings,
       successfulPayments,
+      totalRevenue,
       reservedSeats,
       bookedSeats,
+      completedTrips,
+      cancelledTrips,
     ] = await Promise.all([
       this.prisma.user.count({ where: { deletedAt: null, ...createdAtFilter } }),
       this.prisma.operator.count({ where: { deletedAt: null, ...createdAtFilter } }),
@@ -41,11 +45,24 @@ export class AdminService {
       this.prisma.booking.count({
         where: { deletedAt: null, status: booking_status.CONFIRMED, ...createdAtFilter },
       }),
+      this.prisma.booking.count({
+        where: { deletedAt: null, status: booking_status.CANCELLED, ...createdAtFilter },
+      }),
       this.prisma.payment.count({
+        where: { status: payment_status.SUCCESS, ...createdAtFilter },
+      }),
+      this.prisma.payment.aggregate({
+        _sum: { amount: true },
         where: { status: payment_status.SUCCESS, ...createdAtFilter },
       }),
       this.prisma.tripSeat.count({ where: { status: seat_status.RESERVED } }),
       this.prisma.tripSeat.count({ where: { status: seat_status.BOOKED } }),
+      this.prisma.trip.count({
+        where: { deletedAt: null, status: trip_status.COMPLETED, ...createdAtFilter },
+      }),
+      this.prisma.trip.count({
+        where: { deletedAt: null, status: trip_status.CANCELLED, ...createdAtFilter },
+      }),
     ]);
 
     return {
@@ -57,9 +74,15 @@ export class AdminService {
       bookings: {
         pending: pendingBookings,
         confirmed: confirmedBookings,
+        cancelled: cancelledBookings,
       },
       payments: {
         successful: successfulPayments,
+        revenue: totalRevenue._sum.amount ?? 0,
+      },
+      tripsByStatus: {
+        completed: completedTrips,
+        cancelled: cancelledTrips,
       },
       seats: {
         reserved: reservedSeats,

@@ -64,9 +64,23 @@ export class TripService {
   }
 
   async list(query: TripQueryDto) {
+    const dateFilter = query.date
+      ? {
+          date: new Date(query.date),
+        }
+      : query.dateFrom || query.dateTo
+        ? {
+            date: {
+              ...(query.dateFrom ? { gte: new Date(query.dateFrom) } : {}),
+              ...(query.dateTo ? { lte: new Date(query.dateTo) } : {}),
+            },
+          }
+        : {};
+
     const where: Prisma.TripWhereInput = {
       deletedAt: null,
       ...(query.status ? { status: query.status } : {}),
+      ...dateFilter,
       ...(query.origin || query.destination
         ? {
             route: {
@@ -259,5 +273,9 @@ export class TripService {
       },
       tripSeats,
     };
+  }
+
+  private formatTripDate(date: Date) {
+    return date.toISOString();
   }
 }
