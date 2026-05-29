@@ -2,6 +2,7 @@ import { trip_status } from '@prisma/client';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsDateString,
   IsEnum,
   IsNumber,
@@ -23,6 +24,10 @@ export class CreateTripDto {
 
   @ApiProperty()
   @IsDateString()
+  date: string;
+
+  @ApiProperty()
+  @IsDateString()
   departureTime: string;
 
   @ApiProperty()
@@ -34,6 +39,12 @@ export class CreateTripDto {
   @IsNumber()
   @Min(0)
   price: number;
+
+  @ApiPropertyOptional({ type: [String], default: ['WiFi', 'AC', 'Snacks'] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  amenities?: string[];
 
   @ApiPropertyOptional({ enum: trip_status })
   @IsOptional()

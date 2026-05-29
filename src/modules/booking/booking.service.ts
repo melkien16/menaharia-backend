@@ -5,12 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import {
-  Prisma,
-  booking_status,
-  payment_status,
-  seat_status,
-} from '@prisma/client';
+import { Prisma, booking_status, payment_status, seat_status } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import { CurrentUserDto } from 'src/common/dtos/current-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -26,10 +21,7 @@ export class BookingService {
   ) {}
 
   async createBooking(user: CurrentUserDto, dto: CreateBookingDto) {
-    const reservationMinutes = this.configService.get<number>(
-      'booking.seatReservationMinutes',
-      10,
-    );
+    const reservationMinutes = this.configService.get<number>('booking.seatReservationMinutes', 10);
     const now = new Date();
     const reservationExpiry = new Date(now.getTime() + reservationMinutes * 60_000);
     const tripSeatIds = dto.travelers.map((traveler) => traveler.tripSeatId);
@@ -89,9 +81,7 @@ export class BookingService {
         });
 
         if (updated.count !== 1) {
-          throw new ConflictException(
-            `Trip seat ${tripSeatId} is no longer available`,
-          );
+          throw new ConflictException(`Trip seat ${tripSeatId} is no longer available`);
         }
       }
 
@@ -179,7 +169,11 @@ export class BookingService {
           trip: {
             include: {
               route: true,
-              bus: true,
+              bus: {
+                include: {
+                  operator: true,
+                },
+              },
             },
           },
           bookingSeats: {
@@ -212,9 +206,7 @@ export class BookingService {
       where: {
         id,
         deletedAt: null,
-        ...(currentUser && !this.isAdmin(currentUser)
-          ? { userId: currentUser.id }
-          : {}),
+        ...(currentUser && !this.isAdmin(currentUser) ? { userId: currentUser.id } : {}),
       },
       include: {
         payment: true,
@@ -222,7 +214,11 @@ export class BookingService {
         trip: {
           include: {
             route: true,
-            bus: true,
+            bus: {
+              include: {
+                operator: true,
+              },
+            },
           },
         },
         travelers: true,

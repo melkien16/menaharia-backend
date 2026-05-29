@@ -2,9 +2,11 @@ model Trip {
   id            String      @id @default(uuid())
   routeId       String      @map("route_id")
   busId         String      @map("bus_id")
+  date          DateTime    @map("date")
   departureTime DateTime    @map("departure_time")
   arrivalTime   DateTime    @map("arrival_time")
   price         Float
+  amenities     String[]    @map("amenities")
   status        trip_status @default(SCHEDULED)
   createdAt     DateTime    @default(now()) @map("created_at")
   updatedAt     DateTime    @updatedAt @map("updated_at")
@@ -17,6 +19,7 @@ model Trip {
 
   @@index([routeId, departureTime])
   @@index([busId, departureTime])
+  @@index([date])
   @@index([status])
   @@map("trips")
 }

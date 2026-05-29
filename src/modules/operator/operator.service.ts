@@ -10,7 +10,21 @@ export class OperatorService {
   async create(dto: CreateOperatorDto) {
     return this.prisma.operator.create({
       data: {
-        ...dto,
+        companyName: dto.name?.trim() ?? dto.companyName.trim(),
+        logo: dto.logo?.trim(),
+        established: dto.established,
+        rating: dto.rating,
+        reliabilityScore: dto.reliabilityScore,
+        badge: dto.badge ?? [],
+        about: dto.about?.trim(),
+        safetyInfo: dto.safetyInfo?.trim(),
+        businessLicenseNo: dto.businessLicenseNo.trim(),
+        tinNo: dto.tinNo.trim(),
+        phone: dto.phone.trim(),
+        address: dto.address.trim(),
+        responsibleName: dto.responsibleName.trim(),
+        companyPhone: dto.companyPhone.trim(),
+        companyEmail: dto.companyEmail.trim(),
         status: dto.status ?? partner_status.ACTIVE,
       },
     });
@@ -46,7 +60,25 @@ export class OperatorService {
     const operator = await this.prisma.operator.findFirst({
       where: { id, deletedAt: null },
       include: {
-        buses: true,
+        buses: {
+          where: { deletedAt: null },
+          include: {
+            trips: {
+              where: { deletedAt: null },
+              include: {
+                route: true,
+                tripSeats: {
+                  where: {
+                    status: 'AVAILABLE',
+                  },
+                  select: { id: true },
+                },
+              },
+              orderBy: { departureTime: 'asc' },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
       },
     });
 
@@ -54,14 +86,63 @@ export class OperatorService {
       throw new NotFoundException('Operator not found');
     }
 
-    return operator;
+    const now = new Date();
+    const previousRoutes = Array.from(
+      new Set(
+        operator.buses.flatMap((bus) =>
+          bus.trips
+            .filter((trip) => trip.departureTime < now)
+            .map((trip) => `${trip.route.origin} → ${trip.route.destination}`),
+        ),
+      ),
+    );
+
+    const upcomingTrips = operator.buses
+      .flatMap((bus) =>
+        bus.trips
+          .filter((trip) => trip.departureTime >= now)
+          .map((trip) => ({
+            id: trip.id,
+            route: `${trip.route.origin} → ${trip.route.destination}`,
+            departure: trip.departureTime.toISOString().slice(11, 16),
+            busType: bus.make,
+            seatsLeft: trip.tripSeats.length,
+            price: trip.price,
+          })),
+      )
+      .sort((left, right) => left.departure.localeCompare(right.departure));
+
+    return {
+      ...operator,
+      previousRoutes,
+      upcomingTrips,
+    };
   }
 
   async update(id: string, dto: UpdateOperatorDto) {
     await this.ensureExists(id);
     return this.prisma.operator.update({
       where: { id },
-      data: dto,
+      data: {
+        ...(dto.name || dto.companyName
+          ? { companyName: dto.name?.trim() ?? dto.companyName?.trim() }
+          : {}),
+        ...(dto.logo ? { logo: dto.logo.trim() } : {}),
+        ...(dto.established !== undefined ? { established: dto.established } : {}),
+        ...(dto.rating !== undefined ? { rating: dto.rating } : {}),
+        ...(dto.reliabilityScore !== undefined ? { reliabilityScore: dto.reliabilityScore } : {}),
+        ...(dto.badge ? { badge: dto.badge } : {}),
+        ...(dto.about ? { about: dto.about.trim() } : {}),
+        ...(dto.safetyInfo ? { safetyInfo: dto.safetyInfo.trim() } : {}),
+        ...(dto.businessLicenseNo ? { businessLicenseNo: dto.businessLicenseNo.trim() } : {}),
+        ...(dto.tinNo ? { tinNo: dto.tinNo.trim() } : {}),
+        ...(dto.phone ? { phone: dto.phone.trim() } : {}),
+        ...(dto.address ? { address: dto.address.trim() } : {}),
+        ...(dto.responsibleName ? { responsibleName: dto.responsibleName.trim() } : {}),
+        ...(dto.companyPhone ? { companyPhone: dto.companyPhone.trim() } : {}),
+        ...(dto.companyEmail ? { companyEmail: dto.companyEmail.trim() } : {}),
+        ...(dto.status ? { status: dto.status } : {}),
+      },
     });
   }
 

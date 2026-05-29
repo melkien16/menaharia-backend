@@ -13,6 +13,7 @@ import { RoleModule } from './modules/role/role.module';
 import { UserModule } from './modules/user/user.module';
 import { OperatorModule } from './modules/operator/operator.module';
 import { BusModule } from './modules/bus/bus.module';
+import { DestinationModule } from './modules/destination/destination.module';
 import { RouteModule } from './modules/route/route.module';
 import { TripModule } from './modules/trip/trip.module';
 import { SeatModule } from './modules/seat/seat.module';
@@ -33,9 +34,7 @@ import { CronModule } from './modules/cron/cron.module';
       load: [configuration],
 
       validationSchema: Joi.object({
-        APP_NAME: Joi.string().default(
-          'Noble Lemat Delivery And Marketplace API',
-        ),
+        APP_NAME: Joi.string().default('Noble Lemat Delivery And Marketplace API'),
         NODE_ENV: Joi.string()
           .valid('development', 'production', 'staging', 'test')
           .default('development'),
@@ -66,6 +65,7 @@ import { CronModule } from './modules/cron/cron.module';
     UserModule,
     OperatorModule,
     BusModule,
+    DestinationModule,
     RouteModule,
     TripModule,
     SeatModule,

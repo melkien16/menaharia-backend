@@ -1,9 +1,24 @@
 import { partner_status } from '@prisma/client';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsEmail,
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
 
 export class CreateOperatorDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  name?: string;
+
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
@@ -47,6 +62,45 @@ export class CreateOperatorDto {
   @ApiProperty()
   @IsEmail()
   companyEmail: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  logo?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  established?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  rating?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  reliabilityScore?: number;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  badge?: string[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  about?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  safetyInfo?: string;
 }
 
 export class UpdateOperatorDto extends PartialType(CreateOperatorDto) {}

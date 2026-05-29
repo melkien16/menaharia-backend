@@ -23,9 +23,11 @@ export class TripService {
         data: {
           routeId: dto.routeId,
           busId: dto.busId,
+          date: new Date(dto.date),
           departureTime: new Date(dto.departureTime),
           arrivalTime: new Date(dto.arrivalTime),
           price: dto.price,
+          amenities: dto.amenities ?? ['WiFi', 'AC', 'Snacks'],
           status: dto.status ?? trip_status.SCHEDULED,
         },
       });
@@ -40,18 +42,24 @@ export class TripService {
         });
       }
 
-      return tx.trip.findUniqueOrThrow({
-        where: { id: trip.id },
-        include: {
-          route: true,
-          bus: true,
-          tripSeats: {
-            include: {
-              seat: true,
+      return tx.trip
+        .findUniqueOrThrow({
+          where: { id: trip.id },
+          include: {
+            route: true,
+            bus: {
+              include: {
+                operator: true,
+              },
+            },
+            tripSeats: {
+              include: {
+                seat: true,
+              },
             },
           },
-        },
-      });
+        })
+        .then((createdTrip) => this.formatTripDetail(createdTrip));
     });
   }
 
@@ -91,7 +99,11 @@ export class TripService {
         orderBy: { departureTime: 'asc' },
         include: {
           route: true,
-          bus: true,
+          bus: {
+            include: {
+              operator: true,
+            },
+          },
           tripSeats: {
             where: {
               status: seat_status.AVAILABLE,
@@ -106,10 +118,7 @@ export class TripService {
     ]);
 
     return {
-      items: items.map((trip) => ({
-        ...trip,
-        availableSeatCount: trip.tripSeats.length,
-      })),
+      items: items.map((trip) => this.formatTripSummary(trip)),
       meta: {
         page: query.page,
         limit: query.limit,
@@ -123,10 +132,31 @@ export class TripService {
       where: { id, deletedAt: null },
       include: {
         route: true,
-        bus: true,
+        bus: {
+          include: {
+            operator: true,
+          },
+        },
         tripSeats: {
           include: {
             seat: true,
+            bookingSeats: {
+              include: {
+                booking: {
+                  select: {
+                    id: true,
+                    bookingReference: true,
+                    status: true,
+                  },
+                },
+                traveler: {
+                  select: {
+                    id: true,
+                    fullName: true,
+                  },
+                },
+              },
+            },
           },
           orderBy: {
             seat: {
@@ -141,7 +171,7 @@ export class TripService {
       throw new NotFoundException('Trip not found');
     }
 
-    return trip;
+    return this.formatTripDetail(trip);
   }
 
   async update(id: string, dto: UpdateTripDto) {
@@ -149,9 +179,14 @@ export class TripService {
     return this.prisma.trip.update({
       where: { id },
       data: {
-        ...dto,
+        ...(dto.routeId ? { routeId: dto.routeId } : {}),
+        ...(dto.busId ? { busId: dto.busId } : {}),
+        ...(dto.date ? { date: new Date(dto.date) } : {}),
         ...(dto.departureTime ? { departureTime: new Date(dto.departureTime) } : {}),
         ...(dto.arrivalTime ? { arrivalTime: new Date(dto.arrivalTime) } : {}),
+        ...(dto.price !== undefined ? { price: dto.price } : {}),
+        ...(dto.amenities ? { amenities: dto.amenities } : {}),
+        ...(dto.status ? { status: dto.status } : {}),
       },
     });
   }
@@ -176,5 +211,53 @@ export class TripService {
     if (!trip) {
       throw new NotFoundException('Trip not found');
     }
+  }
+
+  private formatTripSummary(trip: any) {
+    return {
+      ...trip,
+      routeName: `${trip.route.origin} → ${trip.route.destination}`,
+      busName: trip.bus.operator.companyName,
+      operatorName: trip.bus.operator.companyName,
+      bus: {
+        ...trip.bus,
+        name: trip.bus.operator.companyName,
+      },
+      availableSeatCount: trip.tripSeats.length,
+    };
+  }
+
+  private formatTripDetail(trip: any) {
+    const tripSeats = trip.tripSeats.map((tripSeat: any) => ({
+      ...tripSeat,
+      seatNumber: tripSeat.seat.seatNumber,
+      seatType: tripSeat.seat.seatType,
+      isBooked: tripSeat.status === 'BOOKED',
+      isReserved: tripSeat.status === 'RESERVED',
+      isAvailable: tripSeat.status === 'AVAILABLE',
+      booking: tripSeat.bookingSeats[0]
+        ? {
+            id: tripSeat.bookingSeats[0].booking.id,
+            bookingReference: tripSeat.bookingSeats[0].booking.bookingReference,
+            status: tripSeat.bookingSeats[0].booking.status,
+            traveler: tripSeat.bookingSeats[0].traveler,
+          }
+        : null,
+    }));
+
+    return {
+      ...trip,
+      routeName: `${trip.route.origin} → ${trip.route.destination}`,
+      busName: trip.bus.operator.companyName,
+      bus: {
+        ...trip.bus,
+        name: trip.bus.operator.companyName,
+        operator: trip.bus.operator,
+      },
+      route: {
+        ...trip.route,
+      },
+      tripSeats,
+    };
   }
 }
