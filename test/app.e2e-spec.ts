@@ -18,13 +18,24 @@ describe('AppController (e2e)', () => {
     await app.init();
   });
 
+  afterEach(async () => {
+    await app.close();
+  });
+
   it('/ (GET)', () => {
     return request(app.getHttpServer())
       .get('/')
       .expect(200)
       .expect(({ body }) => {
         expect(body.success).toBe(true);
-        expect(body.data.status).toBe('ok');
+        expect(body.data).toEqual(
+          expect.objectContaining({
+            name: expect.any(String),
+            env: expect.any(String),
+            status: 'ok',
+            docsPath: '/docs',
+          }),
+        );
       });
   });
 });
