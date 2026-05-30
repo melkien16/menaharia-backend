@@ -13,7 +13,7 @@ export class RouteController {
 
   @Post()
   @ApiBearerAuth()
-  @Roles(SystemRolesEnum.ADMIN, SystemRolesEnum.SUPER_ADMIN)
+  @Roles(SystemRolesEnum.ADMIN, SystemRolesEnum.SUPER_ADMIN, SystemRolesEnum.BUS_OPERATOR)
   @ApiOperation({ summary: 'Create a route' })
   create(@Body() dto: CreateRouteDto) {
     return this.routeService.create(dto);
@@ -35,7 +35,7 @@ export class RouteController {
 
   @Patch(':id')
   @ApiBearerAuth()
-  @Roles(SystemRolesEnum.ADMIN, SystemRolesEnum.SUPER_ADMIN)
+  @Roles(SystemRolesEnum.ADMIN, SystemRolesEnum.SUPER_ADMIN, SystemRolesEnum.BUS_OPERATOR)
   @ApiOperation({ summary: 'Update route' })
   update(@Param('id') id: string, @Body() dto: UpdateRouteDto) {
     return this.routeService.update(id, dto);
@@ -43,7 +43,7 @@ export class RouteController {
 
   @Delete(':id')
   @ApiBearerAuth()
-  @Roles(SystemRolesEnum.ADMIN, SystemRolesEnum.SUPER_ADMIN)
+  @Roles(SystemRolesEnum.ADMIN, SystemRolesEnum.SUPER_ADMIN, SystemRolesEnum.BUS_OPERATOR)
   @ApiOperation({ summary: 'Soft delete route' })
   remove(@Param('id') id: string) {
     return this.routeService.remove(id);

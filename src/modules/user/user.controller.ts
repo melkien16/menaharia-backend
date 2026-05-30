@@ -8,7 +8,12 @@ import { UserService } from './user.service';
 @ApiTags('users')
 @ApiBearerAuth()
 @Controller({ path: 'users', version: '1' })
-@Roles(SystemRolesEnum.ADMIN, SystemRolesEnum.SUPER_ADMIN)
+@Roles(
+  SystemRolesEnum.ADMIN,
+  SystemRolesEnum.SUPER_ADMIN,
+  SystemRolesEnum.BUS_OPERATOR,
+  SystemRolesEnum.USER,
+)
 export class UserController {
   constructor(private readonly userService: UserService) {}
 

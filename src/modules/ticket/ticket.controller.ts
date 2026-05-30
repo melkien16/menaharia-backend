@@ -12,7 +12,7 @@ export class TicketController {
   constructor(private readonly ticketService: TicketService) {}
 
   @Get()
-  @Roles(SystemRolesEnum.ADMIN, SystemRolesEnum.SUPER_ADMIN)
+  @Roles(SystemRolesEnum.ADMIN, SystemRolesEnum.SUPER_ADMIN, SystemRolesEnum.BUS_OPERATOR)
   @ApiOperation({ summary: 'List tickets' })
   list(@Query() query: TicketQueryDto) {
     return this.ticketService.list(query);

@@ -8,7 +8,7 @@ import { BusService } from './bus.service';
 @ApiTags('buses')
 @ApiBearerAuth()
 @Controller({ path: 'buses', version: '1' })
-@Roles(SystemRolesEnum.ADMIN, SystemRolesEnum.SUPER_ADMIN)
+@Roles(SystemRolesEnum.ADMIN, SystemRolesEnum.SUPER_ADMIN, SystemRolesEnum.BUS_OPERATOR)
 export class BusController {
   constructor(private readonly busService: BusService) {}
 

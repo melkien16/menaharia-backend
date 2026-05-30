@@ -13,7 +13,7 @@ export class SeatController {
 
   @Post('batch')
   @ApiBearerAuth()
-  @Roles(SystemRolesEnum.ADMIN, SystemRolesEnum.SUPER_ADMIN)
+  @Roles(SystemRolesEnum.ADMIN, SystemRolesEnum.SUPER_ADMIN, SystemRolesEnum.BUS_OPERATOR)
   @ApiOperation({ summary: 'Create bus seats in batch' })
   createBatch(@Body() dto: CreateSeatBatchDto) {
     return this.seatService.createBatch(dto);

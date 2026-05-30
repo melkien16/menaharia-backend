@@ -19,7 +19,7 @@ export class CronController {
   }
 
   @Post('expire-seat-reservations')
-  @Roles(SystemRolesEnum.ADMIN, SystemRolesEnum.SUPER_ADMIN)
+  @Roles(SystemRolesEnum.ADMIN, SystemRolesEnum.SUPER_ADMIN, SystemRolesEnum.BUS_OPERATOR)
   @ApiOperation({ summary: 'Manually expire stale seat reservations' })
   expireSeatReservations(@Body() dto: ExpireSeatsDto) {
     return this.cronService.expireReservedSeats(dto.olderThanMinutes);

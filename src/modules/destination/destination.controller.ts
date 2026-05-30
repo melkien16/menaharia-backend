@@ -12,7 +12,7 @@ import { DestinationService } from './destination.service';
 @ApiTags('destinations')
 @ApiBearerAuth()
 @Controller({ path: 'destinations', version: '1' })
-@Roles(SystemRolesEnum.ADMIN, SystemRolesEnum.SUPER_ADMIN)
+@Roles(SystemRolesEnum.ADMIN, SystemRolesEnum.SUPER_ADMIN, SystemRolesEnum.BUS_OPERATOR)
 export class DestinationController {
   constructor(private readonly destinationService: DestinationService) {}
 

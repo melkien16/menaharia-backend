@@ -12,7 +12,7 @@ export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
 
   @Post()
-  @Roles(SystemRolesEnum.ADMIN, SystemRolesEnum.SUPER_ADMIN)
+  @Roles(SystemRolesEnum.ADMIN, SystemRolesEnum.SUPER_ADMIN, SystemRolesEnum.BUS_OPERATOR)
   @ApiOperation({ summary: 'Send an operational notification' })
   send(@Body() dto: SendNotificationDto) {
     return this.notificationService.send(dto);

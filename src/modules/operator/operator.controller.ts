@@ -9,7 +9,7 @@ import { OperatorService } from './operator.service';
 @ApiTags('operators')
 @ApiBearerAuth()
 @Controller({ path: 'operators', version: '1' })
-@Roles(SystemRolesEnum.ADMIN, SystemRolesEnum.SUPER_ADMIN)
+@Roles(SystemRolesEnum.ADMIN, SystemRolesEnum.SUPER_ADMIN, SystemRolesEnum.BUS_OPERATOR)
 export class OperatorController {
   constructor(private readonly operatorService: OperatorService) {}
 

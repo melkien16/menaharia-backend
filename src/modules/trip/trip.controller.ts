@@ -13,7 +13,7 @@ export class TripController {
 
   @Post()
   @ApiBearerAuth()
-  @Roles(SystemRolesEnum.ADMIN, SystemRolesEnum.SUPER_ADMIN)
+  @Roles(SystemRolesEnum.ADMIN, SystemRolesEnum.SUPER_ADMIN, SystemRolesEnum.BUS_OPERATOR)
   @ApiOperation({ summary: 'Create a trip and materialize trip seats' })
   create(@Body() dto: CreateTripDto) {
     return this.tripService.create(dto);
@@ -35,7 +35,7 @@ export class TripController {
 
   @Patch(':id')
   @ApiBearerAuth()
-  @Roles(SystemRolesEnum.ADMIN, SystemRolesEnum.SUPER_ADMIN)
+  @Roles(SystemRolesEnum.ADMIN, SystemRolesEnum.SUPER_ADMIN, SystemRolesEnum.BUS_OPERATOR)
   @ApiOperation({ summary: 'Update trip' })
   update(@Param('id') id: string, @Body() dto: UpdateTripDto) {
     return this.tripService.update(id, dto);
@@ -43,7 +43,7 @@ export class TripController {
 
   @Delete(':id')
   @ApiBearerAuth()
-  @Roles(SystemRolesEnum.ADMIN, SystemRolesEnum.SUPER_ADMIN)
+  @Roles(SystemRolesEnum.ADMIN, SystemRolesEnum.SUPER_ADMIN, SystemRolesEnum.BUS_OPERATOR)
   @ApiOperation({ summary: 'Soft delete trip' })
   remove(@Param('id') id: string) {
     return this.tripService.remove(id);
