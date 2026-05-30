@@ -1,0 +1,26 @@
+model Dispute {
+  id          String         @id @default(uuid())
+  reference   String         @unique @map("reference")
+  userId      String         @map("user_id")
+  operatorId  String         @map("operator_id")
+  bookingId   String?        @map("booking_id")
+  subject     String
+  message     String         @map("message")
+  status      dispute_status @default(PENDING)
+  response    String?        @map("response")
+  reviewedAt  DateTime?      @map("reviewed_at")
+  resolvedAt  DateTime?      @map("resolved_at")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+  deletedAt   DateTime?      @map("deleted_at")
+
+  user     User     @relation(fields: [userId], references: [id])
+  operator Operator @relation(fields: [operatorId], references: [id])
+  booking  Booking? @relation(fields: [bookingId], references: [id])
+
+  @@index([userId])
+  @@index([operatorId])
+  @@index([bookingId])
+  @@index([status])
+  @@map("disputes")
+}

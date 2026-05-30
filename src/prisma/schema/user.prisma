@@ -11,6 +11,7 @@ model User {
 
   roles         UserRole[]
   bookings      Booking[]
+  disputes      Dispute[]
   refreshTokens RefreshToken[]
 
   @@index([status])

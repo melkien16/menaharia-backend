@@ -23,6 +23,7 @@ import { TicketModule } from './modules/ticket/ticket.module';
 import { TravelerModule } from './modules/traveler/traveler.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { DisputeModule } from './modules/dispute/dispute.module';
 import { CronModule } from './modules/cron/cron.module';
 
 @Module({
@@ -75,6 +76,7 @@ import { CronModule } from './modules/cron/cron.module';
     TravelerModule,
     NotificationModule,
     AdminModule,
+    DisputeModule,
     CronModule,
   ],
   providers: [

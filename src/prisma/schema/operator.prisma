@@ -21,6 +21,7 @@ model Operator {
   deletedAt         DateTime?      @map("deleted_at")
 
   buses Bus[]
+  disputes Dispute[]
 
   @@index([status])
   @@index([deletedAt])

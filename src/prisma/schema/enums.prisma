@@ -50,3 +50,10 @@ enum seat_type {
   VIP
   STANDARD
 }
+
+enum dispute_status {
+  PENDING
+  IN_REVIEW
+  RESOLVED
+  REJECTED
+}
