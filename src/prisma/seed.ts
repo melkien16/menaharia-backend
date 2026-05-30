@@ -6,8 +6,16 @@ import * as path from 'path';
 import { SystemRolesEnum } from 'src/common/enums/users/roles.enum';
 import { getDatabaseUrl } from './prisma-url';
 
-loadEnvFile('.env.local');
-loadEnvFile('.env');
+for (const fileName of [
+  '.env.local',
+  '.env',
+  '.env.example',
+  '.env.development',
+  '.env.production',
+  '.env.staging',
+]) {
+  loadEnvFile(fileName);
+}
 
 const connectionString = getDatabaseUrl();
 
@@ -88,7 +96,12 @@ async function seedUsersForRoles() {
     // upsert user
     const user = await prisma.user.upsert({
       where: { email },
-      update: {},
+      update: {
+        phone,
+        password: hashedPwd,
+        fullName,
+        status: 'ACTIVE',
+      },
       create: {
         phone,
         email,
