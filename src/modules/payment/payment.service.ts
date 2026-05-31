@@ -116,7 +116,6 @@ export class PaymentService {
         amount: payment.booking.totalAmount.toString(),
         paymentMethod: payment_method.CHAPA,
         paymentType: PaymentWebhookScenariosEnum.ORDER_CHECKOUT,
-        returnUrl: 'http://localhost:5173/bookings',
       },
     );
 

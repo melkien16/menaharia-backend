@@ -100,8 +100,6 @@ export class BookingService {
     }
 
     const reservationMinutes = this.configService.get<number>('booking.seatReservationMinutes', 10);
-    const now = new Date();
-    const reservationExpiry = new Date(now.getTime() + reservationMinutes * 60_000);
     const tripSeatIds = dto.travelers.map((traveler) => traveler.tripSeatId);
     const uniqueTripSeatIds = new Set(tripSeatIds);
 
@@ -111,6 +109,9 @@ export class BookingService {
 
     const result = await this.prisma.runInTransaction(async () => {
       const tx = this.prisma.tx;
+
+      const now = new Date();
+      const reservationExpiry = new Date(now.getTime() + reservationMinutes * 60_000);
 
       const trip = await tx.trip.findFirst({
         where: {
@@ -133,7 +134,7 @@ export class BookingService {
           },
           status: seat_status.RESERVED,
           reservationExpiry: {
-            lt: now,
+            lte: now,
           },
         },
         data: {
