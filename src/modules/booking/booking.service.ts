@@ -6,12 +6,12 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import { Prisma, booking_status, payment_status, seat_status } from '@prisma/client';
+import { Prisma, booking_status, payment_status, seat_status, user_status } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import { CurrentUserDto } from 'src/common/dtos/current-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { PaymentService } from '../payment/payment.service';
-import { BookingQueryDto, CreateBookingDto } from './dto/booking.dto';
+import { BookingQueryDto, CreateBookingDto, CreateBookingForUserDto } from './dto/booking.dto';
 
 @Injectable()
 export class BookingService {
@@ -22,6 +22,22 @@ export class BookingService {
   ) {}
 
   async createBooking(user: CurrentUserDto, dto: CreateBookingDto) {
+    return this.createBookingForTargetUser(user.id, dto, false);
+  }
+
+  async createBookingForUser(dto: CreateBookingForUserDto) {
+    return this.createBookingForTargetUser(dto.userId, dto, true);
+  }
+
+  private async createBookingForTargetUser(
+    userId: string,
+    dto: CreateBookingDto,
+    validateTargetUser = false,
+  ) {
+    if (validateTargetUser) {
+      await this.ensureTargetUserExists(userId);
+    }
+
     const reservationMinutes = this.configService.get<number>('booking.seatReservationMinutes', 10);
     const now = new Date();
     const reservationExpiry = new Date(now.getTime() + reservationMinutes * 60_000);
@@ -92,7 +108,7 @@ export class BookingService {
       const booking = await tx.booking.create({
         data: {
           bookingReference,
-          userId: user.id,
+          userId,
           tripId: dto.tripId,
           reservedUntil: reservationExpiry,
           status: booking_status.PENDING,
@@ -144,6 +160,21 @@ export class BookingService {
         result.booking.bookingReference,
       ),
     };
+  }
+
+  private async ensureTargetUserExists(userId: string) {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        id: userId,
+        deletedAt: null,
+        status: user_status.ACTIVE,
+      },
+      select: { id: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
   }
 
   async list(query: BookingQueryDto, currentUser?: CurrentUserDto) {

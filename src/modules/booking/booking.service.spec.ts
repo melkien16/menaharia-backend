@@ -132,4 +132,43 @@ describe('BookingService', () => {
       }),
     );
   });
+
+  it('creates a booking for another active user', async () => {
+    prisma.user = {
+      findFirst: jest.fn().mockResolvedValue({ id: 'target-user' }),
+    };
+    tx.trip.findFirst.mockResolvedValue({ id: 'trip-1', price: 100, route: { id: 'route-1' } });
+    tx.tripSeat.updateMany
+      .mockResolvedValueOnce({ count: 0 })
+      .mockResolvedValueOnce({ count: 1 });
+    tx.booking.create.mockResolvedValue({ id: 'booking-1', bookingReference: 'BKG-123456789ABC' });
+    tx.travelerInformation.create.mockResolvedValue({ id: 'traveler-1' });
+    tx.bookingSeat.create.mockResolvedValue({});
+    tx.payment.create.mockResolvedValue({ id: 'payment-1' });
+
+    const service = new BookingService(prisma, configService, paymentService);
+
+    await service.createBookingForUser({
+      userId: 'target-user',
+      tripId: 'trip-1',
+      paymentMethod: 'CASH',
+      travelers: [
+        {
+          tripSeatId: 'seat-1',
+          fullName: 'Alice',
+          email: 'alice@example.com',
+          phone: '0911',
+          emergencyContact: '0912',
+        },
+      ],
+    } as any);
+
+    expect(tx.booking.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          userId: 'target-user',
+        }),
+      }),
+    );
+  });
 });

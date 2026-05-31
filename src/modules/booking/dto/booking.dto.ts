@@ -57,6 +57,12 @@ export class CreateBookingDto {
   travelers: BookingTravelerDto[];
 }
 
+export class CreateBookingForUserDto extends CreateBookingDto {
+  @ApiProperty()
+  @IsUUID()
+  userId: string;
+}
+
 export class BookingQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ enum: booking_status })
   @IsOptional()

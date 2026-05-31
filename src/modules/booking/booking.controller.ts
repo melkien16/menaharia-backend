@@ -1,8 +1,10 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, Version } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Roles } from 'src/common/authorization/decorators/roles.decorator';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { CurrentUserDto } from 'src/common/dtos/current-user.dto';
-import { BookingQueryDto, CreateBookingDto } from './dto/booking.dto';
+import { SystemRolesEnum } from 'src/common/enums/users/roles.enum';
+import { BookingQueryDto, CreateBookingDto, CreateBookingForUserDto } from './dto/booking.dto';
 import { BookingService } from './booking.service';
 
 @ApiTags('bookings')
@@ -15,6 +17,13 @@ export class BookingController {
   @ApiOperation({ summary: 'Reserve seats, create a booking, and initialize payment' })
   create(@CurrentUser() user: CurrentUserDto, @Body() dto: CreateBookingDto) {
     return this.bookingService.createBooking(user, dto);
+  }
+
+  @Post('for-user')
+  @Roles(SystemRolesEnum.ADMIN, SystemRolesEnum.SUPER_ADMIN, SystemRolesEnum.BUS_OPERATOR)
+  @ApiOperation({ summary: 'Create a booking for another user' })
+  createForUser(@Body() dto: CreateBookingForUserDto) {
+    return this.bookingService.createBookingForUser(dto);
   }
 
   @Get()
