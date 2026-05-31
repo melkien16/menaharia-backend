@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import {
@@ -20,8 +21,11 @@ import { TicketService } from '../ticket/ticket.service';
 import { NotificationService } from '../notification/notification.service';
 import { PaymentService as CommonPaymentService } from 'src/common/payment/payment.service';
 import { PaymentWebhookScenariosEnum } from 'src/common/enums/shared/payment.enum';
+
 @Injectable()
 export class PaymentService {
+  private readonly logger = new Logger(PaymentService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly ticketService: TicketService,
@@ -136,34 +140,24 @@ export class PaymentService {
       where: {
         OR: [
           ...(dto.bookingId ? [{ bookingId: dto.bookingId }] : []),
-          ...(dto.gatewayReference
-            ? [{ gatewayReference: dto.gatewayReference }]
-            : []),
+          ...(dto.gatewayReference ? [{ gatewayReference: dto.gatewayReference }] : []),
         ],
       },
       include: {
         booking: {
           select: {
             id: true,
-            user: {
-              select: {
-                  fullName: true,
-                email: true,
-                phone: true,
-              },
-            },
             bookingReference: true,
             status: true,
+            user: {
+              select: { fullName: true, email: true, phone: true },
+            },
           },
         },
       },
     });
 
-    if (!payment) {
-      throw new NotFoundException('Payment not found');
-    }
-
-    let ticketNumber: string | null = null;
+    if (!payment) throw new NotFoundException('Payment not found');
 
     const updatedPayment = await this.prisma.runInTransaction(async () => {
       const tx = this.prisma.tx;
@@ -181,19 +175,12 @@ export class PaymentService {
 
         await tx.booking.update({
           where: { id: payment.booking.id },
-          data: {
-            status: booking_status.CONFIRMED,
-            reservedUntil: null,
-          },
+          data: { status: booking_status.CONFIRMED, reservedUntil: null },
         });
 
         await tx.tripSeat.updateMany({
           where: {
-            bookingSeats: {
-              some: {
-                bookingId: payment.booking.id,
-              },
-            },
+            bookingSeats: { some: { bookingId: payment.booking.id } },
           },
           data: {
             status: seat_status.BOOKED,
@@ -203,11 +190,7 @@ export class PaymentService {
           },
         });
 
-        const ticket = await this.ticketService.generateForBooking(
-          payment.booking.id,
-          tx,
-        );
-        ticketNumber = ticket.ticketNumber;
+        await this.ticketService.generateForBooking(payment.booking.id);
 
         return updated;
       }
@@ -223,19 +206,12 @@ export class PaymentService {
 
       await tx.booking.update({
         where: { id: payment.booking.id },
-        data: {
-          status: booking_status.CANCELLED,
-          reservedUntil: null,
-        },
+        data: { status: booking_status.CANCELLED, reservedUntil: null },
       });
 
       await tx.tripSeat.updateMany({
         where: {
-          bookingSeats: {
-            some: {
-              bookingId: payment.booking.id,
-            },
-          },
+          bookingSeats: { some: { bookingId: payment.booking.id } },
           status: seat_status.RESERVED,
         },
         data: {
@@ -246,18 +222,21 @@ export class PaymentService {
         },
       });
 
-      return tx.payment.findUniqueOrThrow({
-        where: { id: payment.id },
-      });
+      return tx.payment.findUniqueOrThrow({ where: { id: payment.id } });
     });
 
-    if (ticketNumber && dto.status === payment_status.SUCCESS) {
-      await this.notificationService.sendBookingConfirmedNotification({
+    if (dto.status === payment_status.SUCCESS) {
+      // Fire-and-forget: generate PDFs + email for every ticket that has no PDF yet
+      this.ticketService
+        .buildAndDispatchPendingPDFs(payment.booking.id)
+        .catch((err) =>
+          this.logger.warn(`PDF dispatch failed for booking ${payment.booking.id}: ${err?.message ?? err}`),
+        );
+
+      await this.notificationService.notifyBookingConfirmed({
         email: payment.booking.user.email,
         phone: payment.booking.user.phone,
-        name: payment.booking.user.fullName,
         bookingReference: payment.booking.bookingReference,
-        ticketNumber,
       });
     }
 

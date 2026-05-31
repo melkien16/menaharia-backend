@@ -41,6 +41,47 @@ export class CloudinaryStorageService {
     return this.toUploadResponse(uploadResult);
   }
 
+  async uploadPdfBuffer(
+    buffer: Buffer,
+    filename: string,
+    options: UploadOptions = {},
+  ) {
+    if (!buffer?.length) {
+      throw new BadRequestException('PDF buffer is required');
+    }
+
+    const folder = this.normalizeFolder(options.folder);
+
+    const uploadResult = await new Promise<UploadApiResponse>((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder,
+          public_id: filename,
+          resource_type: 'raw',
+          use_filename: true,
+          unique_filename: false,
+          overwrite: true,
+          format: 'pdf',
+        },
+        (error, result) => {
+          if (error) { reject(error); return; }
+          if (!result) { reject(new InternalServerErrorException('Cloudinary did not return a result')); return; }
+          resolve(result);
+        },
+      );
+
+      Readable.from(buffer).pipe(stream);
+    });
+
+    return {
+      publicId: uploadResult.public_id,
+      secureUrl: uploadResult.secure_url,
+      url: uploadResult.url,
+      bytes: uploadResult.bytes,
+      format: uploadResult.format,
+    };
+  }
+
   async deleteImage(publicId: string) {
     const normalizedPublicId = publicId?.trim();
 

@@ -4,6 +4,12 @@ import { createTransport, type Transporter } from 'nodemailer';
 import type { SentMessageInfo } from 'nodemailer';
 import { MessageTypeEnum } from 'src/common/enums/shared/message-types.enum';
 
+export type EmailAttachment = {
+  filename: string;
+  content: Buffer;
+  contentType: string;
+};
+
 export type SendEmailInput = {
   to: string | string[];
   type: MessageTypeEnum | string;
@@ -12,6 +18,7 @@ export type SendEmailInput = {
   html?: string;
   text?: string;
   replyTo?: string;
+  attachments?: EmailAttachment[];
 };
 
 export type SendEmailResult = {
@@ -106,6 +113,11 @@ export class EmailService {
         subject: rendered.subject,
         html: rendered.html,
         text: rendered.text,
+        attachments: input.attachments?.map((a) => ({
+          filename: a.filename,
+          content: a.content,
+          contentType: a.contentType,
+        })),
       })) as SentMessageInfo;
 
       const accepted = Array.isArray(info.accepted) ? info.accepted.map(String) : [];
@@ -177,6 +189,89 @@ export class EmailService {
         ticketNumber: params.ticketNumber,
         appName: this.appName,
       },
+    });
+  }
+
+  async sendTicketEmail(params: {
+    to: string;
+    travelerName: string;
+    bookingReference: string;
+    ticketNumber: string;
+    route: string;
+    departureTime: Date;
+    pdfBuffer: Buffer;
+    pdfFilename: string;
+  }) {
+    const depStr = new Date(params.departureTime).toLocaleString('en-US', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    const html = this.wrapHtml(`
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+        <div style="background:#1a3d6e;padding:28px 32px;border-radius:8px 8px 0 0;">
+          <h1 style="color:#fff;margin:0;font-size:22px;">MENAHARIA PLC</h1>
+          <p style="color:#d4a017;margin:6px 0 0;font-size:12px;">Official Transport Service</p>
+        </div>
+        <div style="background:#fff;padding:32px;border:1px solid #dde3ed;border-top:none;">
+          <h2 style="color:#1a3d6e;margin-top:0;">Your Ticket is Confirmed!</h2>
+          <p>Hello <strong>${this.escapeHtml(params.travelerName)}</strong>,</p>
+          <p>Your boarding ticket for the journey below is attached to this email as a PDF.</p>
+
+          <table style="width:100%;border-collapse:collapse;margin:20px 0;font-size:14px;">
+            <tr style="background:#f4f7fb;">
+              <td style="padding:10px 14px;color:#6b7280;width:38%;">Booking Reference</td>
+              <td style="padding:10px 14px;font-weight:bold;color:#1a3d6e;">${this.escapeHtml(params.bookingReference)}</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 14px;color:#6b7280;">Ticket Number</td>
+              <td style="padding:10px 14px;font-weight:bold;color:#1a3d6e;">${this.escapeHtml(params.ticketNumber)}</td>
+            </tr>
+            <tr style="background:#f4f7fb;">
+              <td style="padding:10px 14px;color:#6b7280;">Route</td>
+              <td style="padding:10px 14px;">${this.escapeHtml(params.route)}</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 14px;color:#6b7280;">Departure</td>
+              <td style="padding:10px 14px;">${this.escapeHtml(depStr)}</td>
+            </tr>
+          </table>
+
+          <div style="background:#f4f7fb;border-left:4px solid #d4a017;padding:14px 18px;border-radius:4px;margin:24px 0;">
+            <p style="margin:0;font-size:13px;color:#1f2937;">
+              <strong>Please bring this ticket (printed or digital) when boarding.</strong><br/>
+              The attached PDF contains your QR code for quick verification.
+            </p>
+          </div>
+
+          <p style="color:#6b7280;font-size:12px;">
+            For assistance, contact us at <strong>+251920839188</strong>.
+          </p>
+        </div>
+        <div style="background:#f4f7fb;padding:14px 32px;border-radius:0 0 8px 8px;text-align:center;">
+          <p style="color:#9ca3af;font-size:11px;margin:0;">
+            © ${new Date().getFullYear()} Menaharia PLC — Official Transport Service
+          </p>
+        </div>
+      </div>
+    `);
+
+    return this.sendEmail({
+      to: params.to,
+      type: MessageTypeEnum.BOOKING_CONFIRMED,
+      subject: `Your Ticket ${params.ticketNumber} — ${params.route}`,
+      html,
+      attachments: [
+        {
+          filename: params.pdfFilename,
+          content: params.pdfBuffer,
+          contentType: 'application/pdf',
+        },
+      ],
     });
   }
 

@@ -255,7 +255,7 @@ export class BookingService {
         orderBy: { createdAt: 'desc' },
         include: {
           payment: true,
-          ticket: true,
+          tickets: true,
           trip: {
             include: {
               route: true,
@@ -300,7 +300,7 @@ export class BookingService {
       },
       include: {
         payment: true,
-        ticket: true,
+        tickets: true,
         trip: {
           include: {
             route: true,
@@ -404,4 +404,5 @@ export class BookingService {
   private isAdmin(user: CurrentUserDto) {
     return user.roles.some((role) => ['ADMIN', 'SUPER_ADMIN'].includes(role));
   }
+
 }

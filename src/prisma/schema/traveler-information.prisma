@@ -10,6 +10,7 @@ model TravelerInformation {
 
   booking      Booking       @relation(fields: [bookingId], references: [id])
   bookingSeats BookingSeat[]
+  ticket       Ticket?
 
   @@index([bookingId])
   @@map("traveler_information")

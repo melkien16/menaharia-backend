@@ -14,7 +14,7 @@ model Booking {
   user         User                   @relation(fields: [userId], references: [id])
   trip         Trip                   @relation(fields: [tripId], references: [id])
   payment      Payment?
-  ticket       Ticket?
+  tickets      Ticket[]
   disputes     Dispute[]
   bookingSeats BookingSeat[]
   travelers    TravelerInformation[]
