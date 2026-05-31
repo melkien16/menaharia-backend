@@ -1,6 +1,6 @@
 import { user_status } from '@prisma/client';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsUUID } from 'class-validator';
+import { IsEmail, IsEnum, IsOptional, IsUUID } from 'class-validator';
 import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
 
 export class UserQueryDto extends PaginationQueryDto {
@@ -8,6 +8,17 @@ export class UserQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsEnum(user_status)
   status?: user_status;
+}
+
+export class SearchUserQueryDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  phone?: string;
 }
 
 export class UpdateUserStatusDto {

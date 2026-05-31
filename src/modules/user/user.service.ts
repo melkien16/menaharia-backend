@@ -1,8 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, user_status } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { RoleService } from '../role/role.service';
-import { UpdateUserStatusDto, UserQueryDto, UserRoleMutationDto } from './dto/user.dto';
+import { SearchUserQueryDto, UpdateUserStatusDto, UserQueryDto, UserRoleMutationDto } from './dto/user.dto';
 
 @Injectable()
 export class UserService {
@@ -42,6 +42,38 @@ export class UserService {
         total,
       },
     };
+  }
+
+  async search(query: SearchUserQueryDto) {
+    const email = query.email?.trim().toLowerCase();
+    const phone = query.phone?.trim();
+
+    if (!email && !phone) {
+      throw new BadRequestException('Email or phone is required');
+    }
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        deletedAt: null,
+        OR: [
+          ...(email ? [{ email }] : []),
+          ...(phone ? [{ phone }] : []),
+        ],
+      },
+      include: {
+        roles: {
+          include: {
+            role: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
   }
 
   async getById(id: string) {

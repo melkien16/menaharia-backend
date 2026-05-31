@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Version } fro
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Roles } from 'src/common/authorization/decorators/roles.decorator';
 import { SystemRolesEnum } from 'src/common/enums/users/roles.enum';
-import { UpdateUserStatusDto, UserQueryDto, UserRoleMutationDto } from './dto/user.dto';
+import { SearchUserQueryDto, UpdateUserStatusDto, UserQueryDto, UserRoleMutationDto } from './dto/user.dto';
 import { UserService } from './user.service';
 
 @ApiTags('users')
@@ -21,6 +21,13 @@ export class UserController {
   @ApiOperation({ summary: 'List users' })
   list(@Query() query: UserQueryDto) {
     return this.userService.list(query);
+  }
+
+  @Get('search')
+  @Roles(SystemRolesEnum.ADMIN, SystemRolesEnum.SUPER_ADMIN, SystemRolesEnum.BUS_OPERATOR)
+  @ApiOperation({ summary: 'Search a user by email or phone' })
+  search(@Query() query: SearchUserQueryDto) {
+    return this.userService.search(query);
   }
 
   @Get(':id')
