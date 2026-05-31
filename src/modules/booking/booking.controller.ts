@@ -1,10 +1,27 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Version } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Version,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { AllowAnonymous } from 'src/common/authorization/decorators/public.decorator';
 import { Roles } from 'src/common/authorization/decorators/roles.decorator';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { CurrentUserDto } from 'src/common/dtos/current-user.dto';
 import { SystemRolesEnum } from 'src/common/enums/users/roles.enum';
-import { BookingQueryDto, CreateBookingDto, CreateBookingForUserDto } from './dto/booking.dto';
+import {
+  BookingQueryDto,
+  CreateBookingDto,
+  CreateBookingForUserDto,
+  CreateBookingWithAccountDto,
+} from './dto/booking.dto';
 import { BookingService } from './booking.service';
 
 @ApiTags('bookings')
@@ -17,6 +34,14 @@ export class BookingController {
   @ApiOperation({ summary: 'Reserve seats, create a booking, and initialize payment' })
   create(@CurrentUser() user: CurrentUserDto, @Body() dto: CreateBookingDto) {
     return this.bookingService.createBooking(user, dto);
+  }
+
+  @Post('register-and-book')
+  @AllowAnonymous()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Register a new user and create a booking' })
+  registerAndBook(@Body() dto: CreateBookingWithAccountDto) {
+    return this.bookingService.createBookingWithAccount(dto);
   }
 
   @Post('for-user')

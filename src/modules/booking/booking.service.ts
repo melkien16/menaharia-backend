@@ -6,12 +6,19 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import * as bcrypt from 'bcrypt';
 import { Prisma, booking_status, payment_status, seat_status, user_status } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import { CurrentUserDto } from 'src/common/dtos/current-user.dto';
+import { SystemRolesEnum } from 'src/common/enums/users/roles.enum';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { PaymentService } from '../payment/payment.service';
-import { BookingQueryDto, CreateBookingDto, CreateBookingForUserDto } from './dto/booking.dto';
+import {
+  BookingQueryDto,
+  CreateBookingDto,
+  CreateBookingForUserDto,
+  CreateBookingWithAccountDto,
+} from './dto/booking.dto';
 
 @Injectable()
 export class BookingService {
@@ -27,6 +34,60 @@ export class BookingService {
 
   async createBookingForUser(dto: CreateBookingForUserDto) {
     return this.createBookingForTargetUser(dto.userId, dto, true);
+  }
+
+  async createBookingWithAccount(dto: CreateBookingWithAccountDto) {
+    const email = dto.email.trim().toLowerCase();
+    const phone = dto.phone.trim();
+
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ email }, { phone }],
+      },
+      select: { id: true },
+    });
+
+    if (existingUser) {
+      throw new ConflictException('An account with this email or phone already exists');
+    }
+
+    const defaultRole = await this.prisma.role.findUnique({
+      where: { name: SystemRolesEnum.USER },
+      select: { id: true },
+    });
+
+    if (!defaultRole) {
+      throw new NotFoundException('Default user role not found');
+    }
+
+    const passwordHash = await bcrypt.hash(dto.password, 10);
+    const account = await this.prisma.user.create({
+      data: {
+        fullName: dto.fullName.trim(),
+        email,
+        phone,
+        password: passwordHash,
+        status: user_status.ACTIVE,
+        roles: {
+          create: {
+            roleId: defaultRole.id,
+          },
+        },
+      },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        fullName: true,
+      },
+    });
+
+    const booking = await this.createBookingForTargetUser(account.id, dto, false);
+
+    return {
+      account,
+      ...booking,
+    };
   }
 
   private async createBookingForTargetUser(

@@ -24,6 +24,13 @@ describe('BookingService', () => {
   } as any;
 
   const prisma = {
+    user: {
+      findFirst: jest.fn(),
+      create: jest.fn(),
+    },
+    role: {
+      findUnique: jest.fn(),
+    },
     tx,
     runInTransaction: jest.fn(async (callback: () => Promise<any>) => callback()),
   } as any;
@@ -134,9 +141,7 @@ describe('BookingService', () => {
   });
 
   it('creates a booking for another active user', async () => {
-    prisma.user = {
-      findFirst: jest.fn().mockResolvedValue({ id: 'target-user' }),
-    };
+    prisma.user.findFirst.mockResolvedValue({ id: 'target-user' });
     tx.trip.findFirst.mockResolvedValue({ id: 'trip-1', price: 100, route: { id: 'route-1' } });
     tx.tripSeat.updateMany
       .mockResolvedValueOnce({ count: 0 })
@@ -168,6 +173,59 @@ describe('BookingService', () => {
         data: expect.objectContaining({
           userId: 'target-user',
         }),
+      }),
+    );
+  });
+
+  it('registers a new user and creates a booking in one flow', async () => {
+    prisma.user.findFirst.mockResolvedValue(null);
+    prisma.role.findUnique.mockResolvedValue({ id: 'role-user' });
+    prisma.user.create.mockResolvedValue({
+      id: 'new-user',
+      email: 'new@example.com',
+      phone: '0911',
+      fullName: 'New Customer',
+    });
+    tx.trip.findFirst.mockResolvedValue({ id: 'trip-1', price: 100, route: { id: 'route-1' } });
+    tx.tripSeat.updateMany
+      .mockResolvedValueOnce({ count: 0 })
+      .mockResolvedValueOnce({ count: 1 });
+    tx.booking.create.mockResolvedValue({ id: 'booking-1', bookingReference: 'BKG-123456789ABC' });
+    tx.travelerInformation.create.mockResolvedValue({ id: 'traveler-1' });
+    tx.bookingSeat.create.mockResolvedValue({});
+    tx.payment.create.mockResolvedValue({ id: 'payment-1' });
+
+    const service = new BookingService(prisma, configService, paymentService);
+    const result = await service.createBookingWithAccount({
+      fullName: 'New Customer',
+      phone: '0911',
+      email: 'new@example.com',
+      password: 'Password123!',
+      tripId: 'trip-1',
+      paymentMethod: 'CASH',
+      travelers: [
+        {
+          tripSeatId: 'seat-1',
+          fullName: 'Alice',
+          email: 'alice@example.com',
+          phone: '0911',
+          emergencyContact: '0912',
+        },
+      ],
+    } as any);
+
+    expect(prisma.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          email: 'new@example.com',
+          fullName: 'New Customer',
+        }),
+      }),
+    );
+    expect(result.account).toEqual(
+      expect.objectContaining({
+        id: 'new-user',
+        email: 'new@example.com',
       }),
     );
   });

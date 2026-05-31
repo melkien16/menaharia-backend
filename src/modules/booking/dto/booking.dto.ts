@@ -18,49 +18,70 @@ import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
 export class BookingTravelerDto {
   @ApiProperty()
   @IsUUID()
-  tripSeatId: string;
+  declare tripSeatId: string;
 
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  fullName: string;
+  declare fullName: string;
 
   @ApiProperty()
   @IsEmail()
-  email: string;
+  declare email: string;
 
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  phone: string;
+  declare phone: string;
 
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  emergencyContact: string;
+  declare emergencyContact: string;
 }
 
 export class CreateBookingDto {
   @ApiProperty()
   @IsUUID()
-  tripId: string;
+  declare tripId: string;
 
   @ApiProperty({ enum: payment_method })
   @IsEnum(payment_method)
-  paymentMethod: payment_method;
+  declare paymentMethod: payment_method;
 
   @ApiProperty({ type: [BookingTravelerDto] })
   @IsArray()
   @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => BookingTravelerDto)
-  travelers: BookingTravelerDto[];
+  declare travelers: BookingTravelerDto[];
 }
 
 export class CreateBookingForUserDto extends CreateBookingDto {
   @ApiProperty()
   @IsUUID()
-  userId: string;
+  declare userId: string;
+}
+
+export class CreateBookingWithAccountDto extends CreateBookingDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  declare fullName: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  declare phone: string;
+
+  @ApiProperty()
+  @IsEmail()
+  declare email: string;
+
+  @ApiProperty({ minLength: 8 })
+  @IsString()
+  @IsNotEmpty()
+  declare password: string;
 }
 
 export class BookingQueryDto extends PaginationQueryDto {
