@@ -3,6 +3,7 @@ import {
   ConflictException,
   Inject,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { user_status } from '@prisma/client';
@@ -18,6 +19,7 @@ import {
 import type { AuthJwtConfig } from 'src/common/authorization/types/auth.types';
 import { SystemRolesEnum } from 'src/common/enums/users/roles.enum';
 import { CurrentUserDto } from 'src/common/dtos/current-user.dto';
+import { EmailService } from 'src/common/email/email.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -25,9 +27,12 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly emailService: EmailService,
     @Inject('AUTH_JWT_CONFIG') private readonly jwtConfig: AuthJwtConfig,
   ) {}
 
@@ -58,6 +63,7 @@ export class AuthService {
         email: true,
         phone: true,
         fullName: true,
+        profilePicture: true,
         status: true,
         deletedAt: true,
         roles: {
@@ -72,13 +78,27 @@ export class AuthService {
       },
     });
 
-    return this.buildAuthResponse({
+    const response = this.buildAuthResponse({
       id: user.id,
       email: user.email,
       phone: user.phone,
       fullName: user.fullName,
+      profilePicture: user.profilePicture,
       roles: user.roles.map(({ role }) => role.name),
     });
+
+    try {
+      await this.emailService.sendWelcomeEmail({
+        to: user.email,
+        name: user.fullName,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Failed to send welcome email to ${user.email}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+
+      return response;
   }
 
   async login(dto: LoginDto) {
@@ -95,6 +115,7 @@ export class AuthService {
         email: true,
         phone: true,
         fullName: true,
+        profilePicture: true,
         password: true,
         deletedAt: true,
         status: true,
@@ -128,6 +149,7 @@ export class AuthService {
       email: user.email,
       phone: user.phone,
       fullName: user.fullName,
+      profilePicture: user.profilePicture,
       roles: user.roles.map(({ role }) => role.name),
     });
   }
@@ -217,10 +239,38 @@ export class AuthService {
         ...(dto.fullName ? { fullName: dto.fullName.trim() } : {}),
         ...(email ? { email } : {}),
         ...(phone ? { phone } : {}),
+        ...(dto.profilePicture !== undefined ? { profilePicture: dto.profilePicture } : {}),
       },
     });
 
     return this.getProfileById(userId);
+  }
+
+  async deleteMe(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, deletedAt: true },
+    });
+
+    if (!user || user.deletedAt) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    await this.prisma.runInTransaction(async () => {
+      const tx = this.prisma.tx;
+
+      await tx.user.update({
+        where: { id: userId },
+        data: { deletedAt: new Date() },
+      });
+
+      await tx.refreshToken.updateMany({
+        where: { userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+    });
+
+    return { message: 'Account deleted successfully' };
   }
 
   async changePassword(userId: string, dto: ChangePasswordDto) {
@@ -335,6 +385,7 @@ export class AuthService {
         email: true,
         phone: true,
         fullName: true,
+        profilePicture: true,
         deletedAt: true,
         roles: {
           select: {
@@ -357,6 +408,7 @@ export class AuthService {
       email: user.email,
       phone: user.phone,
       fullName: user.fullName,
+      profilePicture: user.profilePicture,
       roles: user.roles.map(({ role }) => role.name),
     };
   }
@@ -369,6 +421,7 @@ export class AuthService {
         email: true,
         phone: true,
         fullName: true,
+        profilePicture: true,
         status: true,
         deletedAt: true,
         createdAt: true,

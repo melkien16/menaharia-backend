@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   HttpCode,
   HttpStatus,
   Get,
@@ -72,6 +73,14 @@ export class AuthController {
   @ApiOperation({ summary: 'Update the authenticated user profile' })
   updateMe(@CurrentUser() user: CurrentUserDto, @Body() dto: UpdateProfileDto) {
     return this.authService.updateMe(user.id, dto);
+  }
+
+  @Delete('me')
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete the authenticated user profile' })
+  deleteMe(@CurrentUser() user: CurrentUserDto) {
+    return this.authService.deleteMe(user.id);
   }
 
   @Post('change-password')

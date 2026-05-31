@@ -1,8 +1,12 @@
 import { NotificationService } from './notification.service';
 
 describe('NotificationService', () => {
+  const emailService = {
+    sendBookingConfirmedEmail: jest.fn().mockResolvedValue({ messageId: 'email-1' }),
+  } as any;
+
   it('returns dispatched payloads', async () => {
-    const service = new NotificationService();
+    const service = new NotificationService(emailService);
 
     await expect(
       service.send({
@@ -21,7 +25,7 @@ describe('NotificationService', () => {
   });
 
   it('composes booking confirmation notifications', async () => {
-    const service = new NotificationService();
+    const service = new NotificationService(emailService);
 
     await expect(
       service.sendBookingConfirmedNotification({
@@ -34,6 +38,14 @@ describe('NotificationService', () => {
         channel: 'BOOKING_CONFIRMATION',
         email: 'user@example.com',
         message: expect.stringContaining('BKG-1'),
+      }),
+    );
+
+    expect(emailService.sendBookingConfirmedEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'user@example.com',
+        bookingReference: 'BKG-1',
+        ticketNumber: 'TKT-1',
       }),
     );
   });

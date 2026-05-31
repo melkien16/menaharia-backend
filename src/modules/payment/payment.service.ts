@@ -123,6 +123,7 @@ export class PaymentService {
             id: true,
             user: {
               select: {
+                  fullName: true,
                 email: true,
                 phone: true,
               },
@@ -230,6 +231,7 @@ export class PaymentService {
       await this.notificationService.sendBookingConfirmedNotification({
         email: payment.booking.user.email,
         phone: payment.booking.user.phone,
+        name: payment.booking.user.fullName,
         bookingReference: payment.booking.bookingReference,
         ticketNumber,
       });

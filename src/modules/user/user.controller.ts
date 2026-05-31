@@ -2,7 +2,12 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Version } fro
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Roles } from 'src/common/authorization/decorators/roles.decorator';
 import { SystemRolesEnum } from 'src/common/enums/users/roles.enum';
-import { SearchUserQueryDto, UpdateUserStatusDto, UserQueryDto, UserRoleMutationDto } from './dto/user.dto';
+import {
+  SearchUserQueryDto,
+  UpdateUserStatusDto,
+  UserQueryDto,
+  UserRoleMutationDto,
+} from './dto/user.dto';
 import { UserService } from './user.service';
 
 @ApiTags('users')
@@ -58,5 +63,12 @@ export class UserController {
   @ApiOperation({ summary: 'Soft delete a user' })
   remove(@Param('id') id: string) {
     return this.userService.softDelete(id);
+  }
+
+  @Delete(':id/hard')
+  @Roles(SystemRolesEnum.ADMIN, SystemRolesEnum.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Permanently delete a user' })
+  hardDelete(@Param('id') id: string) {
+    return this.userService.hardDelete(id);
   }
 }

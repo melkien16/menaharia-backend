@@ -35,6 +35,19 @@ export default () => ({
     seatSweepIntervalMs: parseInt(process.env.SEAT_SWEEP_INTERVAL_MS ?? '60000', 10),
   },
 
+  email: {
+    useLocalTransport: process.env.EMAIL_USE_LOCAL_TRANSPORT === 'true',
+    smtpHost: process.env.SMTP_HOST,
+    smtpPort: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : undefined,
+    smtpUser: process.env.SMTP_USER,
+    smtpPass: process.env.SMTP_PASS,
+    smtpSecure: process.env.SMTP_SECURE === 'true',
+    fromEmail: process.env.EMAIL_FROM,
+    fromName:
+      process.env.EMAIL_FROM_NAME || process.env.APP_NAME || 'Noble Lemat Delivery And Marketplace API',
+    replyTo: process.env.EMAIL_REPLY_TO,
+  },
+
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME,
     apiKey: process.env.CLOUDINARY_API_KEY,

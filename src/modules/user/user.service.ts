@@ -114,6 +114,40 @@ export class UserService {
     });
   }
 
+  async hardDelete(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    await this.prisma.runInTransaction(async () => {
+      const tx = this.prisma.tx;
+
+      const bookingIds = await tx.booking
+        .findMany({ where: { userId: id }, select: { id: true } })
+        .then((rows) => rows.map((r) => r.id));
+
+      if (bookingIds.length) {
+        await tx.ticket.deleteMany({ where: { bookingId: { in: bookingIds } } });
+        await tx.bookingSeat.deleteMany({ where: { bookingId: { in: bookingIds } } });
+        await tx.travelerInformation.deleteMany({ where: { bookingId: { in: bookingIds } } });
+        await tx.payment.deleteMany({ where: { bookingId: { in: bookingIds } } });
+        await tx.dispute.deleteMany({ where: { bookingId: { in: bookingIds } } });
+        await tx.booking.deleteMany({ where: { userId: id } });
+      }
+
+      await tx.dispute.deleteMany({ where: { userId: id } });
+      await tx.userRole.deleteMany({ where: { userId: id } });
+      await tx.user.delete({ where: { id } });
+    });
+
+    return { message: 'User permanently deleted' };
+  }
+
   async addRole(userId: string, dto: UserRoleMutationDto) {
     return this.roleService.assignRole({
       userId,

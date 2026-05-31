@@ -24,6 +24,7 @@ export interface AuthenticatedUser {
   email?: string | null;
   phone?: string;
   fullName?: string;
+  profilePicture?: string | null;
   roles: string[];
   refreshTokenId?: string;
 }

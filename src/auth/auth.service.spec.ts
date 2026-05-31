@@ -65,6 +65,10 @@ describe('AuthService', () => {
     decode: jest.fn(),
   } as unknown as JwtService;
 
+  const emailService = {
+    sendWelcomeEmail: jest.fn().mockResolvedValue({ messageId: 'email-1' }),
+  } as any;
+
   const jwtConfig = {
     secret: 'access-secret-123',
     expiresIn: '15m',
@@ -92,7 +96,7 @@ describe('AuthService', () => {
       roles: [{ role: { name: 'USER' } }],
     });
 
-    const service = new AuthService(prisma, jwtService, jwtConfig);
+    const service = new AuthService(prisma, jwtService, emailService, jwtConfig);
     const result = await service.register({
       fullName: '  Test User  ',
       email: 'User@Example.com',
@@ -122,7 +126,7 @@ describe('AuthService', () => {
   it('rejects duplicate registration identifiers', async () => {
     (prisma.user.findUnique as jest.Mock).mockResolvedValueOnce({ id: 'user-1' });
 
-    const service = new AuthService(prisma, jwtService, jwtConfig);
+    const service = new AuthService(prisma, jwtService, emailService, jwtConfig);
 
     await expect(
       service.register({
@@ -151,7 +155,7 @@ describe('AuthService', () => {
       .mockResolvedValueOnce('refresh-token');
     (jwtService.decode as jest.Mock).mockReturnValue({ exp: 1_700_000_100 });
 
-    const service = new AuthService(prisma, jwtService, jwtConfig);
+    const service = new AuthService(prisma, jwtService, emailService, jwtConfig);
     const result = await service.login({
       identifier: ' user@example.com ',
       password: 'Password123',
@@ -164,7 +168,7 @@ describe('AuthService', () => {
   it('rejects invalid login credentials', async () => {
     (prisma.user.findFirst as jest.Mock).mockResolvedValue(null);
 
-    const service = new AuthService(prisma, jwtService, jwtConfig);
+    const service = new AuthService(prisma, jwtService, emailService, jwtConfig);
 
     await expect(
       service.login({ identifier: 'user@example.com', password: 'Password123' }),
@@ -194,7 +198,7 @@ describe('AuthService', () => {
       roles: [{ role: { name: 'USER' } }],
     });
 
-    const service = new AuthService(prisma, jwtService, jwtConfig);
+    const service = new AuthService(prisma, jwtService, emailService, jwtConfig);
     const result = await service.refresh(
       { id: 'user-1', roles: ['USER'], refreshTokenId: 'refresh-token-id' },
       'refresh-token',
@@ -215,7 +219,7 @@ describe('AuthService', () => {
       typ: 'refresh',
     });
 
-    const service = new AuthService(prisma, jwtService, jwtConfig);
+    const service = new AuthService(prisma, jwtService, emailService, jwtConfig);
     const result = await service.logout(
       { id: 'user-1', roles: ['USER'], refreshTokenId: 'refresh-token-id' },
       'refresh-token',
