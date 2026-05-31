@@ -10,8 +10,7 @@ import {
 import { PaymentConfig } from '../utils/payment.types';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { generateTransactionReference, selectCallbackUrl } from '../utils/payment.helpers';
-import { TransactionStatusEnum } from '@prisma/client';
-// import { PaymentWebhookScenariosEnum } from '../../enums/shared/payment.enum';
+import { transaction_status } from '@prisma/client';
 
 @Injectable()
 export class ChapaService {
@@ -66,7 +65,7 @@ export class ChapaService {
           txRef: tx_ref,
           userId,
           amount: data.amount,
-          status: TransactionStatusEnum.PENDING,
+          status: transaction_status.PENDING,
           type: transactionType,
         },
       });
@@ -80,10 +79,11 @@ export class ChapaService {
       };
 
       const response = await axios.post(url, payload, { headers });
+      const responseData = response.data as ChapaInitiateResponse & { data?: any };
       return {
-        ...response.data,
+        ...responseData,
         txReference: tx_ref,
-      };
+      } as ChapaInitiateResponse;
     } catch (error) {
       const chapaMessage = error.response?.data?.message;
       const fullResponse = error.response?.data;
@@ -115,7 +115,7 @@ export class ChapaService {
       };
 
       const response = await axios.get(url, { headers });
-      return response.data;
+      return response.data as ChapaPaymentDetailsResponse;
     } catch (error) {
       this.logger.error('Error fetching payment details:', error.response?.data?.message);
       throw new BadRequestException(

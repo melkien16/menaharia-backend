@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PaymentMethodEnum } from '@prisma/client';
+import { payment_method } from '@prisma/client';
 import { ChapaService } from './chapa/chapa.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { InitiatePaymentPayload } from './utils/payment.types';
@@ -17,18 +17,18 @@ export class PaymentService {
     };
 
     switch (payOrder.paymentMethod) {
-      case PaymentMethodEnum.chapa:
+      case payment_method.CHAPA:
         return await this.chapaService.initializeTransaction(
           prismaService,
           payOrder.userId,
           intiateTransactionPayload,
         );
 
-      case PaymentMethodEnum.telebirr:
+      case payment_method.TELEBIRR:
         // TO BE DONE
         return;
 
-      case PaymentMethodEnum.santim:
+      case payment_method.SANTIM:
         // TO BE DONE
         return;
 
@@ -37,16 +37,16 @@ export class PaymentService {
     }
   }
 
-  async getPaymentDetails(txReference: string, paymentMethod: PaymentMethodEnum) {
+  async getPaymentDetails(txReference: string, paymentMethod: payment_method) {
     switch (paymentMethod) {
-      case PaymentMethodEnum.chapa:
+      case payment_method.CHAPA:
         return await this.chapaService.getPaymentDetails(txReference);
 
-      case PaymentMethodEnum.telebirr:
+      case payment_method.TELEBIRR:
         // TO BE DONE
         return;
 
-      case PaymentMethodEnum.santim:
+      case payment_method.SANTIM:
         // TO BE DONE
         return;
 

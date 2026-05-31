@@ -17,7 +17,12 @@ export default () => ({
   },
 
   cors: {
-    origin: process.env.CORS_ORIGIN || '*',
+    origin: (() => {
+      const raw = (process.env.CORS_ORIGIN || '*').trim();
+      if (raw === '*') return '*';
+      const origins = raw.split(',').map((o) => o.trim()).filter(Boolean);
+      return origins.length === 1 ? origins[0] : origins;
+    })(),
     credentials: process.env.CORS_CREDENTIALS === 'true',
   },
 
@@ -53,5 +58,14 @@ export default () => ({
     apiKey: process.env.CLOUDINARY_API_KEY,
     apiSecret: process.env.CLOUDINARY_API_SECRET,
     uploadFolder: process.env.CLOUDINARY_UPLOAD_FOLDER || 'menaharia',
+  },
+
+  payment: {
+    chapa: {
+      apiUrl: process.env.CHAPA_API_URL,
+      publicKey: process.env.CHAPA_PUBLIC_KEY,
+      secretKey: process.env.CHAPA_SECRET_KEY,
+      encryptionKey: process.env.CHAPA_ENCRYPTION_KEY,
+    },
   },
 });

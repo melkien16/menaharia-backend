@@ -17,3 +17,20 @@ model Payment {
   @@index([method, status])
   @@map("payments")
 }
+
+model Transaction {
+  id        String              @id @default(uuid())
+  txRef     String              @unique @map("tx_ref")
+  userId    String              @map("user_id")
+  amount    String
+  status    transaction_status  @default(PENDING)
+  type      String
+  createdAt DateTime            @default(now()) @map("created_at")
+  updatedAt DateTime            @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@map("transactions")
+}

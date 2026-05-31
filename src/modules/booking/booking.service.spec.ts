@@ -129,13 +129,11 @@ describe('BookingService', () => {
         }),
       }),
     );
-    expect(paymentService.buildInitializationPayload).toHaveBeenCalledWith(
-      'payment-1',
-      'BKG-123456789ABC',
-    );
-    expect(result.paymentInitialization).toEqual(
+    expect(result).toEqual(
       expect.objectContaining({
-        gatewayReference: 'PAY-BKG-123456789ABC',
+        booking: expect.objectContaining({
+          bookingReference: 'BKG-123456789ABC',
+        }),
       }),
     );
   });

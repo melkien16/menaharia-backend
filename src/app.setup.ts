@@ -15,7 +15,7 @@ export function configureApp(app: INestApplication) {
   const configService = app.get(ConfigService);
   const appName = configService.getOrThrow<string>('app.name');
   const nodeEnv = configService.getOrThrow<string>('app.env');
-  const corsOrigin = configService.getOrThrow<string>('cors.origin');
+  const corsOrigin = configService.getOrThrow<string | string[]>('cors.origin');
   const corsCredentials = configService.getOrThrow<boolean>('cors.credentials');
   const swaggerEnabled = configService.get<boolean>('swagger.enabled');
 

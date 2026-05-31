@@ -1,4 +1,4 @@
-import { PaymentMethodEnum } from '@prisma/client';
+import { payment_method } from '@prisma/client';
 import { PaymentWebhookScenariosEnum } from 'src/common/enums/shared/payment.enum';
 
 export type PaymentConfig = {
@@ -15,7 +15,7 @@ export type InitiatePaymentPayload = {
   courierRequestId?: string;
   userId: string;
   amount: string;
-  paymentMethod: PaymentMethodEnum;
+  paymentMethod: payment_method;
   paymentType: PaymentWebhookScenariosEnum;
   returnUrl?: string;
 };

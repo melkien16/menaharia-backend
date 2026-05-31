@@ -41,9 +41,15 @@ enum payment_status {
 }
 
 enum payment_method {
-  TELEBIRR
-  CBE
   CHAPA
+  TELEBIRR
+  SANTIM
+}
+
+enum transaction_status {
+  PENDING
+  COMPLETED
+  FAILED
 }
 
 enum seat_type {

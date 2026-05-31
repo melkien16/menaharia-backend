@@ -36,19 +36,12 @@ describe('PaymentService', () => {
     sendBookingConfirmedNotification: jest.fn(),
   } as any;
 
+  const commonPaymentService = {
+    initiatePayment: jest.fn(),
+  } as any;
+
   beforeEach(() => {
     jest.clearAllMocks();
-  });
-
-  it('builds payment checkout payloads', () => {
-    const service = new PaymentService(prisma, ticketService, notificationService);
-
-    expect(service.buildInitializationPayload('payment-1', 'BKG-123')).toEqual(
-      expect.objectContaining({
-        paymentUrl: 'https://payments.menaharia.local/checkout/payment-1',
-        gatewayReference: 'PAY-BKG-123',
-      }),
-    );
   });
 
   it('handles successful callbacks by confirming the booking', async () => {
@@ -66,7 +59,7 @@ describe('PaymentService', () => {
     tx.tripSeat.updateMany.mockResolvedValue({ count: 2 });
     ticketService.generateForBooking.mockResolvedValue({ ticketNumber: 'TKT-BKG-123' });
 
-    const service = new PaymentService(prisma, ticketService, notificationService);
+    const service = new PaymentService(prisma, ticketService, notificationService, commonPaymentService);
     const result = await service.handleCallback({
       bookingId: 'booking-1',
       status: payment_status.SUCCESS,
@@ -97,7 +90,7 @@ describe('PaymentService', () => {
       booking: { id: 'booking-1', bookingReference: 'BKG-123', status: booking_status.CONFIRMED },
     });
 
-    const service = new PaymentService(prisma, ticketService, notificationService);
+    const service = new PaymentService(prisma, ticketService, notificationService, commonPaymentService);
 
     await expect(service.initiatePayment({ bookingId: 'booking-1' } as any)).rejects.toBeInstanceOf(
       BadRequestException,
@@ -107,7 +100,7 @@ describe('PaymentService', () => {
   it('throws when payment records are missing', async () => {
     prisma.payment.findFirst.mockResolvedValue(null);
 
-    const service = new PaymentService(prisma, ticketService, notificationService);
+    const service = new PaymentService(prisma, ticketService, notificationService, commonPaymentService);
 
     await expect(
       service.handleCallback({ bookingId: 'booking-1', status: payment_status.SUCCESS } as any),

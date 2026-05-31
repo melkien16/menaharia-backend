@@ -216,10 +216,6 @@ export class BookingService {
 
     return {
       ...result,
-      paymentInitialization: this.paymentService.buildInitializationPayload(
-        result.payment.id,
-        result.booking.bookingReference,
-      ),
     };
   }
 

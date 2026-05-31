@@ -14,6 +14,7 @@ model User {
   bookings      Booking[]
   disputes      Dispute[]
   refreshTokens RefreshToken[]
+  transactions  Transaction[]
 
   @@index([status])
   @@map("users")

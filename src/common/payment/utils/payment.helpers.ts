@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { PaymentMethodEnum } from '@prisma/client';
+import { payment_method } from '@prisma/client';
 import { PaymentWebhookScenariosEnum } from 'src/common/enums/shared/payment.enum';
 import { v4 as uuidv4 } from 'uuid';
 import * as crypto from 'crypto';
@@ -76,9 +76,9 @@ export function verifyChapaWebhookSignature(body: any, headers: any): any {
  * Verify payment webhook (legacy function for backward compatibility)
  * @deprecated Use verifyChapaWebhookSignature instead
  */
-export function verifyPaymentWebhook(paymentMethod: PaymentMethodEnum, req: any) {
+export function verifyPaymentWebhook(paymentMethod: payment_method, req: any) {
   switch (paymentMethod) {
-    case PaymentMethodEnum.chapa:
+    case payment_method.CHAPA:
       return verifyChapaWebhookSignature(req.body, req.headers);
     default:
       throw new Error('PAYMENT METHOD NOT SUPPORTED');

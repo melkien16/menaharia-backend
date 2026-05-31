@@ -44,6 +44,11 @@ export class PaymentCallbackDto {
   @IsOptional()
   @IsString()
   rawPayload?: string;
+
+  @ApiPropertyOptional({ enum: payment_method })
+  @IsOptional()
+  @IsEnum(payment_method)
+  method?: payment_method;
 }
 
 export class InitiatePaymentDto {

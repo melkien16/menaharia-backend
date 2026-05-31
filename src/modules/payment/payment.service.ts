@@ -8,6 +8,7 @@ import {
   booking_status,
   payment_status,
   seat_status,
+  payment_method,
 } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import {
@@ -17,13 +18,15 @@ import {
 } from './dto/payment.dto';
 import { TicketService } from '../ticket/ticket.service';
 import { NotificationService } from '../notification/notification.service';
-
+import { PaymentService as CommonPaymentService } from 'src/common/payment/payment.service';
+import { PaymentWebhookScenariosEnum } from 'src/common/enums/shared/payment.enum';
 @Injectable()
 export class PaymentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ticketService: TicketService,
     private readonly notificationService: NotificationService,
+    private readonly commonPaymentService: CommonPaymentService,
   ) {}
 
   async list(query: PaymentQueryDto) {
@@ -91,6 +94,8 @@ export class PaymentService {
             id: true,
             bookingReference: true,
             status: true,
+            totalAmount: true,
+            userId: true,
           },
         },
       },
@@ -104,7 +109,27 @@ export class PaymentService {
       throw new BadRequestException('Only pending bookings can be paid');
     }
 
-    return this.buildInitializationPayload(payment.id, payment.booking.bookingReference);
+    const chapaResponse = await this.commonPaymentService.initiatePayment(
+      this.prisma,
+      {
+        userId: payment.booking.userId,
+        amount: payment.booking.totalAmount.toString(),
+        paymentMethod: payment_method.CHAPA,
+        paymentType: PaymentWebhookScenariosEnum.ORDER_CHECKOUT,
+        returnUrl: 'http://localhost:5173/bookings',
+      },
+    );
+
+    if (!chapaResponse?.data?.checkout_url) {
+      throw new BadRequestException('Failed to initialize payment with Chapa');
+    }
+
+    return {
+      paymentUrl: chapaResponse.data.checkout_url,
+      gatewayReference: chapaResponse.txReference,
+      transactionId: chapaResponse.txReference,
+      message: 'Redirect to payment provider to complete payment',
+    };
   }
 
   async handleCallback(dto: PaymentCallbackDto) {
@@ -238,16 +263,5 @@ export class PaymentService {
     }
 
     return updatedPayment;
-  }
-
-  buildInitializationPayload(paymentId: string, bookingReference: string) {
-    const gatewayReference = `PAY-${bookingReference}`;
-
-    return {
-      paymentUrl: `https://payments.menaharia.local/checkout/${paymentId}`,
-      gatewayReference,
-      message:
-        'Redirect the customer to the payment provider and use the callback endpoint to confirm the booking.',
-    };
   }
 }
