@@ -269,7 +269,7 @@ export class TripService {
       isBooked: tripSeat.status === 'BOOKED',
       isReserved: tripSeat.status === 'RESERVED',
       isAvailable: tripSeat.status === 'AVAILABLE',
-      booking: tripSeat.bookingSeats[0]
+      booking: tripSeat.bookingSeats?.[0]
         ? {
             id: tripSeat.bookingSeats[0].booking.id,
             bookingReference: tripSeat.bookingSeats[0].booking.bookingReference,
