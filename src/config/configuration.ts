@@ -34,4 +34,11 @@ export default () => ({
     seatReservationMinutes: parseInt(process.env.SEAT_RESERVATION_MINUTES ?? '10', 10),
     seatSweepIntervalMs: parseInt(process.env.SEAT_SWEEP_INTERVAL_MS ?? '60000', 10),
   },
+
+  cloudinary: {
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+    apiKey: process.env.CLOUDINARY_API_KEY,
+    apiSecret: process.env.CLOUDINARY_API_SECRET,
+    uploadFolder: process.env.CLOUDINARY_UPLOAD_FOLDER || 'menaharia',
+  },
 });

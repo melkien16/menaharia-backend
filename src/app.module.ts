@@ -24,6 +24,7 @@ import { TravelerModule } from './modules/traveler/traveler.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { DisputeModule } from './modules/dispute/dispute.module';
+import { StorageModule } from './modules/storage/storage.module';
 import { CronModule } from './modules/cron/cron.module';
 
 @Module({
@@ -52,6 +53,10 @@ import { CronModule } from './modules/cron/cron.module';
         RATE_LIMIT_LIMIT: Joi.number().default(100),
         SEAT_RESERVATION_MINUTES: Joi.number().default(10),
         SEAT_SWEEP_INTERVAL_MS: Joi.number().default(60000),
+        CLOUDINARY_CLOUD_NAME: Joi.string().required(),
+        CLOUDINARY_API_KEY: Joi.string().required(),
+        CLOUDINARY_API_SECRET: Joi.string().required(),
+        CLOUDINARY_UPLOAD_FOLDER: Joi.string().default('menaharia'),
       }),
 
       validationOptions: {
@@ -77,6 +82,7 @@ import { CronModule } from './modules/cron/cron.module';
     NotificationModule,
     AdminModule,
     DisputeModule,
+    StorageModule,
     CronModule,
   ],
   providers: [
