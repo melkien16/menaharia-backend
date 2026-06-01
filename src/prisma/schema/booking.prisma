@@ -16,6 +16,7 @@ model Booking {
   payment      Payment?
   tickets      Ticket[]
   disputes     Dispute[]
+  ratings      OperatorRating[]
   bookingSeats BookingSeat[]
   travelers    TravelerInformation[]
 

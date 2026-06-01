@@ -13,6 +13,7 @@ model User {
   roles         UserRole[]
   bookings      Booking[]
   disputes      Dispute[]
+  ratings       OperatorRating[]
   refreshTokens RefreshToken[]
   transactions  Transaction[]
 

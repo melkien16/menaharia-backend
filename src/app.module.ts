@@ -12,6 +12,7 @@ import { AppController } from './app.controller';
 import { RoleModule } from './modules/role/role.module';
 import { UserModule } from './modules/user/user.module';
 import { OperatorModule } from './modules/operator/operator.module';
+import { OperatorRatingModule } from './modules/operator-rating/operator-rating.module';
 import { BusModule } from './modules/bus/bus.module';
 import { DestinationModule } from './modules/destination/destination.module';
 import { RouteModule } from './modules/route/route.module';
@@ -79,6 +80,7 @@ import { CronModule } from './modules/cron/cron.module';
     RoleModule,
     UserModule,
     OperatorModule,
+    OperatorRatingModule,
     BusModule,
     DestinationModule,
     RouteModule,

@@ -1,0 +1,20 @@
+model OperatorRating {
+  id         String   @id @default(uuid())
+  operatorId String   @map("operator_id")
+  userId     String   @map("user_id")
+  bookingId  String?  @map("booking_id")
+  rating     Int      @map("rating")
+  comment    String?  @map("comment")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+
+  operator Operator @relation(fields: [operatorId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
+  booking  Booking? @relation(fields: [bookingId], references: [id])
+
+  @@index([operatorId])
+  @@index([userId])
+  @@index([bookingId])
+  @@map("operator_ratings")
+}

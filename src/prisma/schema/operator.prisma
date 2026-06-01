@@ -22,6 +22,7 @@ model Operator {
 
   buses Bus[]
   disputes Dispute[]
+  ratings OperatorRating[]
 
   @@index([status])
   @@index([deletedAt])
