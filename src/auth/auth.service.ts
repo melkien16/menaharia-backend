@@ -20,9 +20,11 @@ import type { AuthJwtConfig } from 'src/common/authorization/types/auth.types';
 import { SystemRolesEnum } from 'src/common/enums/users/roles.enum';
 import { CurrentUserDto } from 'src/common/dtos/current-user.dto';
 import { EmailService } from 'src/common/email/email.service';
+import { OtpUtil } from 'src/common/utils/otp.util';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { ForgotPasswordDto, ResetPasswordDto } from './dto/forgot-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
@@ -98,7 +100,7 @@ export class AuthService {
       );
     }
 
-      return response;
+    return response;
   }
 
   async login(dto: LoginDto) {
@@ -314,6 +316,155 @@ export class AuthService {
     };
   }
 
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const email = this.normalizeOptionalEmail(dto.email);
+
+    if (!email) {
+      throw new BadRequestException('Email is required');
+    }
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        status: true,
+      },
+    });
+
+    if (!user || user.status !== user_status.ACTIVE) {
+      return {
+        message: 'If the email exists, a password reset code has been sent',
+      };
+    }
+
+    const otp = OtpUtil.generateOtpCode();
+    const expiresInMinutes = 10;
+    const expiresAt = OtpUtil.calculateExpiry(expiresInMinutes);
+    const otpHash = await bcrypt.hash(otp, 10);
+
+    await this.prisma.runInTransaction(async () => {
+      const tx = this.prisma.tx;
+
+      await tx.passwordResetOtp.updateMany({
+        where: {
+          userId: user.id,
+          consumedAt: null,
+        },
+        data: {
+          consumedAt: new Date(),
+        },
+      });
+
+      await tx.passwordResetOtp.create({
+        data: {
+          userId: user.id,
+          otpHash,
+          expiresAt,
+        },
+      });
+    });
+
+    try {
+      await this.emailService.sendPasswordResetOtpEmail({
+        to: user.email,
+        name: user.fullName,
+        otp,
+        expiresInMinutes,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Failed to send password reset email to ${user.email}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+
+    return {
+      message: 'If the email exists, a password reset code has been sent',
+    };
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    const email = this.normalizeOptionalEmail(dto.email);
+
+    if (!email) {
+      throw new BadRequestException('Email is required');
+    }
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email,
+        deletedAt: null,
+        status: user_status.ACTIVE,
+      },
+      select: {
+        id: true,
+        email: true,
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid email or OTP');
+    }
+
+    const resetRequest = await this.prisma.passwordResetOtp.findFirst({
+      where: {
+        userId: user.id,
+        consumedAt: null,
+        expiresAt: {
+          gt: new Date(),
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    if (!resetRequest) {
+      throw new UnauthorizedException('Invalid email or OTP');
+    }
+
+    const otpMatches = await bcrypt.compare(dto.otp.trim(), resetRequest.otpHash);
+    if (!otpMatches) {
+      await this.prisma.passwordResetOtp.update({
+        where: { id: resetRequest.id },
+        data: {
+          attempts: resetRequest.attempts + 1,
+        },
+      });
+
+      throw new UnauthorizedException('Invalid email or OTP');
+    }
+
+    const passwordHash = await bcrypt.hash(dto.newPassword, 10);
+
+    await this.prisma.runInTransaction(async () => {
+      const tx = this.prisma.tx;
+
+      await tx.user.update({
+        where: { id: user.id },
+        data: { password: passwordHash },
+      });
+
+      await tx.passwordResetOtp.update({
+        where: { id: resetRequest.id },
+        data: { consumedAt: new Date() },
+      });
+
+      await tx.refreshToken.updateMany({
+        where: { userId: user.id, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+    });
+
+    return {
+      message: 'Password reset successfully',
+    };
+  }
+
   private async buildAuthResponse(user: AuthenticatedUser) {
     const accessPayload: JwtAccessPayload = {
       sub: user.id,
@@ -448,13 +599,7 @@ export class AuthService {
     };
   }
 
-  private async ensureUserDoesNotExist({
-    email,
-    phone,
-  }: {
-    email?: string | null;
-    phone: string;
-  }) {
+  private async ensureUserDoesNotExist({ email, phone }: { email?: string | null; phone: string }) {
     if (email) {
       const existingEmail = await this.prisma.user.findUnique({
         where: { email },

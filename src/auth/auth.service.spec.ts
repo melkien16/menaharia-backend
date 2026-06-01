@@ -47,6 +47,7 @@ describe('AuthService', () => {
       findUnique: jest.fn(),
       findFirst: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
     },
     role: {
       upsert: jest.fn(),
@@ -57,7 +58,21 @@ describe('AuthService', () => {
       update: jest.fn(),
       updateMany: jest.fn(),
     },
+    passwordResetOtp: {
+      create: jest.fn(),
+      findFirst: jest.fn(),
+      update: jest.fn(),
+      updateMany: jest.fn(),
+    },
+    runInTransaction: jest.fn(async (callback: () => Promise<void>) => callback()),
   } as unknown as PrismaService;
+
+  (prisma as any).tx = {
+    user: prisma.user,
+    role: prisma.role,
+    refreshToken: prisma.refreshToken,
+    passwordResetOtp: prisma.passwordResetOtp,
+  };
 
   const jwtService = {
     signAsync: jest.fn(),
@@ -67,6 +82,7 @@ describe('AuthService', () => {
 
   const emailService = {
     sendWelcomeEmail: jest.fn().mockResolvedValue({ messageId: 'email-1' }),
+    sendPasswordResetOtpEmail: jest.fn().mockResolvedValue({ messageId: 'email-2' }),
   } as any;
 
   const jwtConfig = {
@@ -255,5 +271,63 @@ describe('AuthService', () => {
 
     expect(result.roles).toEqual(['USER']);
     expect(result.id).toBe('user-1');
+  });
+
+  it('sends a password reset OTP email', async () => {
+    (prisma.user.findFirst as jest.Mock).mockResolvedValue({
+      id: 'user-1',
+      fullName: 'Test User',
+      email: 'user@example.com',
+      status: 'ACTIVE',
+    });
+    (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-otp');
+    (prisma.passwordResetOtp.create as jest.Mock).mockResolvedValue({ id: 'otp-1' });
+
+    const service = new AuthService(prisma, jwtService, emailService, jwtConfig);
+    const result = await service.forgotPassword({ email: 'user@example.com' });
+
+    expect(prisma.passwordResetOtp.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          userId: 'user-1',
+          otpHash: 'hashed-otp',
+        }),
+      }),
+    );
+    expect(emailService.sendPasswordResetOtpEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ to: 'user@example.com', name: 'Test User' }),
+    );
+    expect(result).toEqual({
+      message: 'If the email exists, a password reset code has been sent',
+    });
+  });
+
+  it('resets the password with a valid OTP', async () => {
+    (prisma.user.findFirst as jest.Mock).mockResolvedValue({
+      id: 'user-1',
+      email: 'user@example.com',
+    });
+    (prisma.passwordResetOtp.findFirst as jest.Mock).mockResolvedValue({
+      id: 'otp-1',
+      attempts: 0,
+      otpHash: 'hashed-otp',
+    });
+    (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+    (bcrypt.hash as jest.Mock).mockResolvedValue('new-hashed-password');
+
+    const service = new AuthService(prisma, jwtService, emailService, jwtConfig);
+    const result = await service.resetPassword({
+      email: 'user@example.com',
+      otp: '123456',
+      newPassword: 'Password123',
+    });
+
+    expect(prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'user-1' },
+        data: { password: 'new-hashed-password' },
+      }),
+    );
+    expect(result).toEqual({ message: 'Password reset successfully' });
   });
 });

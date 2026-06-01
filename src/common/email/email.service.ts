@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createTransport, type Transporter } from 'nodemailer';
 import type { SentMessageInfo } from 'nodemailer';
@@ -124,9 +129,7 @@ export class EmailService {
       const rejected = Array.isArray(info.rejected) ? info.rejected.map(String) : [];
 
       if (rejected.length > 0) {
-        throw new InternalServerErrorException(
-          `SMTP rejected recipients: ${rejected.join(', ')}`,
-        );
+        throw new InternalServerErrorException(`SMTP rejected recipients: ${rejected.join(', ')}`);
       }
 
       if (!info.messageId) {
@@ -135,9 +138,7 @@ export class EmailService {
 
       if (this.useLocalTransport) {
         const preview =
-          typeof info.message === 'string'
-            ? info.message
-            : JSON.stringify(info.message ?? info);
+          typeof info.message === 'string' ? info.message : JSON.stringify(info.message ?? info);
 
         this.logger.log(
           `Development email payload for ${Array.isArray(recipient) ? recipient.join(', ') : recipient}: ${preview.slice(0, 500)}`,
@@ -158,7 +159,9 @@ export class EmailService {
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Failed to send email to ${Array.isArray(recipient) ? recipient.join(', ') : recipient}: ${message}`);
+      this.logger.error(
+        `Failed to send email to ${Array.isArray(recipient) ? recipient.join(', ') : recipient}: ${message}`,
+      );
       throw new InternalServerErrorException(`Failed to send email: ${message}`);
     }
   }
@@ -187,6 +190,24 @@ export class EmailService {
         name: params.name || 'Customer',
         bookingReference: params.bookingReference,
         ticketNumber: params.ticketNumber,
+        appName: this.appName,
+      },
+    });
+  }
+
+  async sendPasswordResetOtpEmail(params: {
+    to: string;
+    name?: string | null;
+    otp: string;
+    expiresInMinutes: number;
+  }) {
+    return this.sendEmail({
+      to: params.to,
+      type: MessageTypeEnum.PASSWORD_RESET,
+      payload: {
+        name: params.name || 'Customer',
+        otp: params.otp,
+        expiresInMinutes: params.expiresInMinutes,
         appName: this.appName,
       },
     });
@@ -290,7 +311,7 @@ export class EmailService {
       case MessageTypeEnum.BOOKING_CONFIRMED:
         return `Your booking ${payload.bookingReference || ''} is confirmed`.trim();
       case MessageTypeEnum.PASSWORD_RESET:
-        return `Reset your ${payload.appName || this.appName} password`;
+        return `Your ${payload.appName || this.appName} password reset OTP`;
       default:
         return payload.subject || `Message from ${payload.appName || this.appName}`;
     }
@@ -307,7 +328,9 @@ export class EmailService {
           `<p>Hello ${this.escapeHtml(payload.name || 'Customer')},</p><p>Your booking <strong>${this.escapeHtml(payload.bookingReference || '')}</strong> is confirmed.</p><p>Ticket number: <strong>${this.escapeHtml(payload.ticketNumber || '')}</strong></p>`,
         );
       case MessageTypeEnum.PASSWORD_RESET:
-        return this.wrapHtml(`<p>Hello,</p><p>Use the password reset link in your inbox.</p>`);
+        return this.wrapHtml(
+          `<p>Hello ${this.escapeHtml(payload.name || 'Customer')},</p><p>Your password reset OTP is <strong style="font-size:20px;letter-spacing:2px;">${this.escapeHtml(payload.otp || '')}</strong>.</p><p>It expires in ${Number(payload.expiresInMinutes || 10)} minutes.</p><p>If you did not request this, you can ignore this email.</p>`,
+        );
       default:
         return this.wrapHtml(
           `<p>${this.escapeHtml(payload.message || 'You have a new message.')}</p>`,
@@ -322,7 +345,7 @@ export class EmailService {
       case MessageTypeEnum.BOOKING_CONFIRMED:
         return `Hello ${payload.name || 'Customer'}\nYour booking ${payload.bookingReference || ''} is confirmed.\nTicket number: ${payload.ticketNumber || ''}`;
       case MessageTypeEnum.PASSWORD_RESET:
-        return 'Use the password reset link in your inbox.';
+        return `Hello ${payload.name || 'Customer'}\n\nYour password reset OTP is ${payload.otp || ''}.\nIt expires in ${Number(payload.expiresInMinutes || 10)} minutes.\nIf you did not request this, you can ignore this email.`;
       default:
         return payload.message || 'You have a new message.';
     }

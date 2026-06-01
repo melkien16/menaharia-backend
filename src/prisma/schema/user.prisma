@@ -14,6 +14,7 @@ model User {
   bookings      Booking[]
   disputes      Dispute[]
   ratings       OperatorRating[]
+  passwordResetOtps PasswordResetOtp[]
   refreshTokens RefreshToken[]
   transactions  Transaction[]
 

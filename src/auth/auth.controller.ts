@@ -18,6 +18,7 @@ import { CurrentUserDto } from 'src/common/dtos/current-user.dto';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { ForgotPasswordDto, ResetPasswordDto } from './dto/forgot-password.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -89,5 +90,21 @@ export class AuthController {
   @ApiOperation({ summary: 'Change the authenticated user password' })
   changePassword(@CurrentUser() user: CurrentUserDto, @Body() dto: ChangePasswordDto) {
     return this.authService.changePassword(user.id, dto);
+  }
+
+  @Post('forgot-password')
+  @AllowAnonymous()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Send a password reset OTP to the user email' })
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto);
+  }
+
+  @Post('reset-password')
+  @AllowAnonymous()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reset password with the emailed OTP' })
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto);
   }
 }
