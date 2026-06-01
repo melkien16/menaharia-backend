@@ -100,12 +100,7 @@ export class BookingService {
     }
 
     const reservationMinutes = this.configService.get<number>('booking.seatReservationMinutes', 10);
-    const tripSeatIds = dto.travelers.map((traveler) => traveler.tripSeatId);
-    const uniqueTripSeatIds = new Set(tripSeatIds);
-
-    if (uniqueTripSeatIds.size !== tripSeatIds.length) {
-      throw new BadRequestException('Each traveler must map to a unique trip seat');
-    }
+    const requestedSeatReferences = dto.travelers.map((traveler) => traveler.tripSeatId);
 
     const result = await this.prisma.runInTransaction(async () => {
       const tx = this.prisma.tx;
@@ -127,10 +122,42 @@ export class BookingService {
         throw new NotFoundException('Trip not found');
       }
 
+      const availableTripSeats = await tx.tripSeat.findMany({
+        where: {
+          tripId: dto.tripId,
+          OR: requestedSeatReferences.flatMap((seatReference) => [
+            { id: seatReference },
+            { seatId: seatReference },
+          ]),
+        },
+        select: {
+          id: true,
+          seatId: true,
+        },
+      });
+
+      const resolvedTripSeats = requestedSeatReferences.map((seatReference) => {
+        const tripSeat = availableTripSeats.find(
+          (item) => item.id === seatReference || item.seatId === seatReference,
+        );
+
+        if (!tripSeat) {
+          throw new ConflictException(`Trip seat ${seatReference} is no longer available`);
+        }
+
+        return tripSeat;
+      });
+
+      const uniqueResolvedTripSeatIds = new Set(resolvedTripSeats.map((tripSeat) => tripSeat.id));
+
+      if (uniqueResolvedTripSeatIds.size !== resolvedTripSeats.length) {
+        throw new BadRequestException('Each traveler must map to a unique trip seat');
+      }
+
       await tx.tripSeat.updateMany({
         where: {
           id: {
-            in: tripSeatIds,
+            in: [...uniqueResolvedTripSeatIds],
           },
           status: seat_status.RESERVED,
           reservationExpiry: {
@@ -144,10 +171,10 @@ export class BookingService {
         },
       });
 
-      for (const tripSeatId of tripSeatIds) {
+      for (const tripSeat of resolvedTripSeats) {
         const updated = await tx.tripSeat.updateMany({
           where: {
-            id: tripSeatId,
+            id: tripSeat.id,
             tripId: dto.tripId,
             status: seat_status.AVAILABLE,
           },
@@ -160,7 +187,7 @@ export class BookingService {
         });
 
         if (updated.count !== 1) {
-          throw new ConflictException(`Trip seat ${tripSeatId} is no longer available`);
+          throw new ConflictException(`Trip seat ${tripSeat.id} is no longer available`);
         }
       }
 
@@ -178,7 +205,7 @@ export class BookingService {
         },
       });
 
-      for (const traveler of dto.travelers) {
+      for (const [index, traveler] of dto.travelers.entries()) {
         const createdTraveler = await tx.travelerInformation.create({
           data: {
             bookingId: booking.id,
@@ -192,7 +219,7 @@ export class BookingService {
         await tx.bookingSeat.create({
           data: {
             bookingId: booking.id,
-            tripSeatId: traveler.tripSeatId,
+            tripSeatId: resolvedTripSeats[index].id,
             travelerId: createdTraveler.id,
           },
         });
@@ -404,5 +431,4 @@ export class BookingService {
   private isAdmin(user: CurrentUserDto) {
     return user.roles.some((role) => ['ADMIN', 'SUPER_ADMIN'].includes(role));
   }
-
 }
