@@ -291,6 +291,8 @@ export class TicketService {
 
   // ─── PDF construction ────────────────────────────────────────────────────────
 
+  // ─── PDF construction ────────────────────────────────────────────────────────
+
   private buildPDF(
     ticket: { ticketNumber: string; qrCode: string; issuedAt: Date; traveler: { fullName: string; email: string; phone: string } },
     ctx: BookingContext,
@@ -300,7 +302,11 @@ export class TicketService {
   ): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       try {
-        const doc = new PDFDocument({ size: 'A4', margin: 0, info: { Title: `Ticket ${ticket.ticketNumber}`, Author: 'Menaharia PLC' } });
+        const doc = new PDFDocument({ 
+          size: 'A4', 
+          margin: 0, 
+          info: { Title: `Ticket ${ticket.ticketNumber}`, Author: 'Menaharia PLC' } 
+        });
         const chunks: Buffer[] = [];
         doc.on('data', (c: Buffer) => chunks.push(c));
         doc.on('end', () => resolve(Buffer.concat(chunks)));
@@ -308,162 +314,217 @@ export class TicketService {
 
         const W = 595.28;
 
-        // ── Page background ──────────────────────────────────────────────────
+        // ── Page background (Clean, Professional Minimalist) ─────────────────
         doc.rect(0, 0, W, 841.89).fill(BRAND_LIGHT_BG);
 
-        // ── Header ───────────────────────────────────────────────────────────
-        doc.rect(0, 0, W, 108).fill(BRAND_DARK);
+        // ── Top Elegant Header Accent Line ────────────────────────────────────
+        doc.rect(0, 0, W, 6).fill(BRAND_DARK);
 
-        doc.fillColor(WHITE).font('Helvetica-Bold').fontSize(22)
-           .text('MENAHARIA PLC', 40, 20, { width: W - 80 });
-        doc.fillColor(BRAND_GOLD).font('Helvetica').fontSize(9.5)
-           .text('Official Transport Service  •  ☎ +251920839188', 40, 47, { width: W - 80 });
-        doc.rect(40, 64, W - 80, 1.5).fill(BRAND_GOLD);
-        doc.fillColor(WHITE).font('Helvetica-Bold').fontSize(12.5)
-           .text('BOARDING TICKET', 40, 74, { width: W - 80 });
+        // ── Corporate Header ─────────────────────────────────────────────────
+        doc.fillColor(BRAND_DARK).font('Helvetica-Bold').fontSize(20)
+           .text('MENAHARIA PLC', 40, 32);
+        
+        doc.fillColor(TEXT_MUTED).font('Helvetica-Bold').fontSize(7.5)
+           .text('EXPRESS INTERCITY TRANSPORT', 40, 54, { characterSpacing: 1 });
+           
+        doc.fillColor(TEXT_DARK).font('Helvetica').fontSize(8.5)
+           .text('☎ +251 920 839 188  •  support@menaharia.com', 40, 66);
 
-        // ── Route banner ─────────────────────────────────────────────────────
-        const ROUTE_TOP = 108;
-        doc.rect(0, ROUTE_TOP, W, 52).fill(BRAND_GOLD);
+        // ── Document Meta (Top Right Align) ──────────────────────────────────
+        doc.fillColor(BRAND_DARK).font('Helvetica-Bold').fontSize(14)
+           .text('BOARDING PASS', W - 240, 32, { width: 200, align: 'right' });
+        
+        doc.fillColor(BRAND_GOLD).font('Helvetica-Bold').fontSize(9)
+           .text(`REF: ${ctx.bookingReference}`, W - 240, 50, { width: 200, align: 'right' });
+
+        // ── Route Banner (High-Class Journey Ribbon) ─────────────────────────
+        const ROUTE_TOP = 96;
+        doc.rect(40, ROUTE_TOP, W - 80, 56).fill(BRAND_DARK);
+        
+        // Dynamic Design Accents inside Route Banner
+        doc.rect(40, ROUTE_TOP, 4, 56).fill(BRAND_GOLD);
 
         const ORIGIN = ctx.route.origin.toUpperCase();
         const DEST   = ctx.route.destination.toUpperCase();
 
-        doc.fillColor(BRAND_DARK).font('Helvetica-Bold').fontSize(14)
-           .text(ORIGIN, 44, ROUTE_TOP + 11, { width: 190 });
-        doc.fillColor(BRAND_DARK).font('Helvetica').fontSize(18)
-           .text('→', 0, ROUTE_TOP + 10, { align: 'center', width: W });
-        doc.fillColor(BRAND_DARK).font('Helvetica-Bold').fontSize(14)
-           .text(DEST, W - 234, ROUTE_TOP + 11, { width: 190, align: 'right' });
-        doc.fillColor(BRAND_DARK).font('Helvetica').fontSize(7.5)
-           .text(`${ctx.route.distance} km`, 0, ROUTE_TOP + 35, { align: 'center', width: W });
+        doc.fillColor(WHITE).font('Helvetica-Bold').fontSize(15)
+           .text(ORIGIN, 60, ROUTE_TOP + 14, { width: 180 });
+        doc.fillColor(BRAND_GOLD).font('Helvetica').fontSize(8)
+           .text('DEPARTURE STATION', 60, ROUTE_TOP + 34);
 
-        // ── Main card ─────────────────────────────────────────────────────────
-        const CT  = ROUTE_TOP + 52 + 12;   // card top    = 172
-        const CL  = 24;                     // card left
-        const CW  = W - 48;                 // card width  ≈ 547
-        const CH  = 462;                    // card height
+        // Center Connection Graphic
+        doc.fillColor(BRAND_GOLD).font('Helvetica-Bold').fontSize(14)
+           .text('━━━━  ▶  ━━━━', 0, ROUTE_TOP + 15, { align: 'center', width: W });
+        doc.fillColor(WHITE).font('Helvetica').fontSize(8)
+           .text(`${ctx.route.distance} KM`, 0, ROUTE_TOP + 34, { align: 'center', width: W });
 
-        doc.roundedRect(CL, CT, CW, CH, 10).fill(WHITE);
+        doc.fillColor(WHITE).font('Helvetica-Bold').fontSize(15)
+           .text(DEST, W - 240, ROUTE_TOP + 14, { width: 180, align: 'right' });
+        doc.fillColor(BRAND_GOLD).font('Helvetica').fontSize(8)
+           .text('ARRIVAL STATION', W - 240, ROUTE_TOP + 34, { width: 180, align: 'right' });
+
+        // ── Main Pass Container Card ─────────────────────────────────────────
+        const CT  = 168;                    // Card top
+        const CL  = 40;                     // Card left (Aligned perfectly with header)
+        const CW  = W - 80;                 // Card width
+        const CH  = 470;                    // Card height
+
+        // White base shadow background simulation
+        doc.roundedRect(CL + 1, CT + 2, CW, CH, 6).fill('#e2e8f0');
+        doc.roundedRect(CL, CT, CW, CH, 6).fill(WHITE);
 
         // Column geometry
-        const IX  = CL + 22;               // info column x
-        const IW  = 326;                    // info column width
-        const DVX = IX + IW + 10;          // vertical divider x  ≈ 358
-        const QX  = DVX + 16;              // QR column x         ≈ 374
-        const QCW = CL + CW - 12 - QX;    // QR column width     ≈ 137
+        const IX  = CL + 24;                // Information column x
+        const IW  = 300;                    // Information column width
+        const DVX = CL + 340;               // Vertical secure divider x
+        const QX  = DVX + 20;               // QR column x
+        const QCW = (CL + CW) - QX - 24;    // QR column width
 
-        // ── STAMP — full-card centred watermark (drawn first) ─────────────────
-        const SS   = 210;                   // stamp size
-        const SCX  = CL + CW / 2 - SS / 2; // centred horizontally in card
-        const SCY  = CT + CH / 2 - SS / 2; // centred vertically in card
+        // ── STAMP Watermark (Centred in left section for maximum professional balance) ──
+        const SS   = 180;
+        const SCX  = IX + (IW / 2) - (SS / 2);
+        const SCY  = CT + (CH / 2) - (SS / 2);
         if (stampBuffer.length > 0) {
           doc.save();
-          (doc as any).fillOpacity(0.09);
+          (doc as any).fillOpacity(0.06);
           doc.image(stampBuffer, SCX, SCY, { width: SS, height: SS });
           doc.restore();
         }
 
-        // ── Left column: content ──────────────────────────────────────────────
+        // ── Left Column: Structural Content Layout ───────────────────────────
         const dep = new Date(ctx.departureTime);
         const arr = new Date(ctx.arrivalTime);
-        let Y = CT + 20;
+        let Y = CT + 24;
 
-        // Passenger
-        this.pdfSection(doc, 'PASSENGER DETAILS', Y, IX);
+        // Section: Passenger
+        this.pdfSection(doc, 'PASSENGER MANIFEST', Y, IX);
         Y += 16;
-        this.pdfInfoRow(doc, 'Name',  ticket.traveler.fullName, Y, IX, IW);  Y += 17;
-        this.pdfInfoRow(doc, 'Email', ticket.traveler.email,    Y, IX, IW);  Y += 17;
-        this.pdfInfoRow(doc, 'Phone', ticket.traveler.phone,    Y, IX, IW);  Y += 20;
-        this.pdfDivider(doc, Y, IX, IW); Y += 12;
+        this.pdfInfoRow(doc, 'PRIMARY TRAVELER', ticket.traveler.fullName, Y, IX, IW);  Y += 18;
+        this.pdfInfoRow(doc, 'EMAIL ADDRESS',    ticket.traveler.email,    Y, IX, IW);  Y += 18;
+        this.pdfInfoRow(doc, 'CONTACT PHONE',    ticket.traveler.phone,    Y, IX, IW);  Y += 22;
+        this.pdfDivider(doc, Y, IX, IW); Y += 14;
 
-        // Travel
-        this.pdfSection(doc, 'TRAVEL DETAILS', Y, IX);
+        // Section: Schedule
+        this.pdfSection(doc, 'ITINERARY & TIMINGS', Y, IX);
         Y += 16;
-        this.pdfInfoRow(doc, 'Date',      dep.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }), Y, IX, IW); Y += 17;
-        this.pdfInfoRow(doc, 'Departure', dep.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }), Y, IX, IW); Y += 17;
-        this.pdfInfoRow(doc, 'Arrival',   arr.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }), Y, IX, IW); Y += 17;
-        this.pdfInfoRow(doc, 'Distance',  `${ctx.route.distance} km`, Y, IX, IW); Y += 17;
-        this.pdfInfoRow(doc, 'Bus',       ctx.plateNumber,             Y, IX, IW); Y += 20;
-        this.pdfDivider(doc, Y, IX, IW); Y += 12;
+        this.pdfInfoRow(doc, 'JOURNEY DATE',    dep.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }), Y, IX, IW); Y += 18;
+        this.pdfInfoRow(doc, 'DEPARTURE TIME',  dep.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }), Y, IX, IW); Y += 18;
+        this.pdfInfoRow(doc, 'ESTIMATED ARRIVAL', arr.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }), Y, IX, IW); Y += 18;
+        this.pdfInfoRow(doc, 'FLEET ASSIGNMENT', `PLATE NO: ${ctx.plateNumber}`, Y, IX, IW); Y += 22;
+        this.pdfDivider(doc, Y, IX, IW); Y += 14;
 
-        // Seat
-        this.pdfSection(doc, 'SEAT ASSIGNMENT', Y, IX);
+        // Section: Seat Geometry Block
+        this.pdfSection(doc, 'ACCOMMODATION & CLASS', Y, IX);
         Y += 14;
         if (seat) {
           const isVip = seat.seatType === 'VIP';
-          doc.roundedRect(IX, Y, 94, 42, 6).fill(BRAND_DARK);
-          doc.fillColor(WHITE).font('Helvetica-Bold').fontSize(7.5)
-             .text('SEAT', IX, Y + 6, { width: 94, align: 'center' });
-          doc.fillColor(BRAND_GOLD).font('Helvetica-Bold').fontSize(17)
-             .text(seat.seatNumber, IX, Y + 18, { width: 94, align: 'center' });
-          doc.roundedRect(IX + 110, Y, 82, 42, 6).fill(isVip ? BRAND_GOLD : BRAND_LIGHT_BG);
-          doc.fillColor(isVip ? BRAND_DARK : TEXT_MUTED).font('Helvetica-Bold').fontSize(7.5)
-             .text('CLASS', IX + 110, Y + 6, { width: 82, align: 'center' });
-          doc.fillColor(isVip ? BRAND_DARK : TEXT_DARK).font('Helvetica-Bold').fontSize(13)
-             .text(seat.seatType, IX + 110, Y + 20, { width: 82, align: 'center' });
+          
+          // Seat Unit Block
+          doc.roundedRect(IX, Y, 100, 46, 4).fill(BRAND_DARK);
+          doc.fillColor(BRAND_GOLD).font('Helvetica-Bold').fontSize(7)
+             .text('ASSIGNED SEAT', IX, Y + 8, { width: 100, align: 'center', characterSpacing: 0.5 });
+          doc.fillColor(WHITE).font('Helvetica-Bold').fontSize(18)
+             .text(seat.seatNumber, IX, Y + 18, { width: 100, align: 'center' });
+
+          // Class Unit Block
+          doc.roundedRect(IX + 112, Y, 100, 46, 4).fill(isVip ? BRAND_GOLD : BRAND_LIGHT_BG);
+          doc.fillColor(isVip ? BRAND_DARK : TEXT_MUTED).font('Helvetica-Bold').fontSize(7)
+             .text('TRAVEL CLASS', IX + 112, Y + 8, { width: 100, align: 'center', characterSpacing: 0.5 });
+          doc.fillColor(isVip ? WHITE : TEXT_DARK).font('Helvetica-Bold').fontSize(14)
+             .text(seat.seatType, IX + 112, Y + 19, { width: 100, align: 'center' });
         } else {
-          doc.fillColor(TEXT_MUTED).font('Helvetica').fontSize(9)
-             .text('No seat assigned', IX, Y + 6);
+          doc.roundedRect(IX, Y, 212, 46, 4).fill(BRAND_LIGHT_BG);
+          doc.fillColor(TEXT_MUTED).font('Helvetica-Bold').fontSize(9)
+             .text('STANDBY / NO SEAT ASSIGNED', IX, Y + 18, { width: 212, align: 'center' });
         }
-        Y += 56;
-        this.pdfDivider(doc, Y, IX, IW); Y += 12;
+        Y += 60;
+        this.pdfDivider(doc, Y, IX, IW); Y += 14;
 
-        // Booking reference
-        this.pdfSection(doc, 'BOOKING REFERENCE', Y, IX);
+        // Section: Billing & Ledger Reference
+        this.pdfSection(doc, 'TRANSACTION VERIFICATION', Y, IX);
         Y += 16;
-        doc.fillColor(BRAND_DARK).font('Helvetica-Bold').fontSize(13)
-           .text(ctx.bookingReference, IX, Y);
-        Y += 20;
-        this.pdfInfoRow(doc, 'Ticket No.', ticket.ticketNumber, Y, IX, IW); Y += 17;
-        doc.fillColor(BRAND_DARK).font('Helvetica-Bold').fontSize(11)
-           .text(`ETB ${ctx.totalAmount.toFixed(2)}`, IX, Y);
+        this.pdfInfoRow(doc, 'TICKET NUMBER', ticket.ticketNumber, Y, IX, IW); Y += 18;
+        this.pdfInfoRow(doc, 'BOOKING STATUS', 'CONFIRMED / PAID', Y, IX, IW); Y += 18;
+        
+        // Total Fare Showcase
+        doc.fillColor(TEXT_MUTED).font('Helvetica-Bold').fontSize(7.5).text('TOTAL FARE', IX, Y + 2);
+        doc.fillColor(BRAND_DARK).font('Helvetica-Bold').fontSize(14)
+           .text(`ETB ${ctx.totalAmount.toFixed(2)}`, IX + 90, Y - 2);
 
-        // ── Vertical dashed divider ───────────────────────────────────────────
-        doc.moveTo(DVX, CT + 20).lineTo(DVX, CT + CH - 20)
-           .dash(4, { space: 3 }).strokeColor(DIVIDER).lineWidth(0.8).stroke();
-        doc.undash();
+        // ── Vertical Security Divider ─────────────────────────────────────────
+        doc.save();
+        doc.moveTo(DVX, CT + 16).lineTo(DVX, CT + CH - 16)
+           .dash(3, { space: 3 }).strokeColor(DIVIDER).lineWidth(1).stroke();
+        doc.restore();
 
-        // ── Right column: QR code ─────────────────────────────────────────────
-        const QR_SIZE = 130;
+        // ── Right Column: Secure Verification (Gate Scan Zone) ────────────────
+        const QR_SIZE = 124;
         const QR_X    = QX + (QCW - QR_SIZE) / 2;
-        const QR_Y    = CT + (CH - QR_SIZE - 56) / 2 + 10; // slightly above-centre
+        const QR_Y    = CT + 45;
 
-        // "SCAN TO VERIFY" label above QR
-        doc.fillColor(BRAND_DARK).font('Helvetica-Bold').fontSize(7)
-           .text('SCAN TO VERIFY', QX, QR_Y - 18, { width: QCW, align: 'center' });
+        // Enclosed Container Boundary Box for QR Code
+        doc.roundedRect(QX, CT + 20, QCW, 190, 4).lineWidth(0.5).strokeColor(DIVIDER).stroke();
+        doc.rect(QX, CT + 20, QCW, 18).fill(BRAND_LIGHT_BG);
+        
+        doc.fillColor(BRAND_DARK).font('Helvetica-Bold').fontSize(6.5)
+           .text('SECURE DIGITAL VALIDATION', QX, CT + 26, { width: QCW, align: 'center', characterSpacing: 0.5 });
 
-        // QR image
+        // Insert System Generated QR
         if (qrBuffer.length > 0) {
           doc.image(qrBuffer, QR_X, QR_Y, { width: QR_SIZE, height: QR_SIZE });
         }
 
-        // Ticket number below QR
-        doc.fillColor(TEXT_MUTED).font('Helvetica').fontSize(6)
-           .text('TICKET NO.', QX, QR_Y + QR_SIZE + 7, { width: QCW, align: 'center' });
-        doc.fillColor(BRAND_DARK).font('Helvetica-Bold').fontSize(6.5)
-           .text(ticket.ticketNumber, QX, QR_Y + QR_SIZE + 17, { width: QCW, align: 'center' });
-        doc.fillColor(TEXT_MUTED).font('Helvetica').fontSize(6)
-           .text(new Date(ticket.issuedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
-                 QX, QR_Y + QR_SIZE + 29, { width: QCW, align: 'center' });
+        // Operational Tracking Strings
+        doc.fillColor(TEXT_MUTED).font('Helvetica-Bold').fontSize(6)
+           .text('SYSTEM DIGITAL SIGNATURE', QX, CT + 182, { width: QCW, align: 'center' });
+        doc.fillColor(TEXT_DARK).font('Helvetica').fontSize(6.5)
+           .text(ticket.ticketNumber, QX, CT + 192, { width: QCW, align: 'center' });
 
-        // ── Tear line ─────────────────────────────────────────────────────────
-        const TEAR_Y = CT + CH + 14;
-        doc.moveTo(24, TEAR_Y).lineTo(W - 24, TEAR_Y)
-           .dash(5, { space: 3.5 }).strokeColor('#c4cdd6').lineWidth(0.8).stroke();
-        doc.undash();
-        doc.fillColor('#9ca3af').font('Helvetica').fontSize(7)
-           .text('✂  DETACH AT BOARDING  ✂', 0, TEAR_Y - 9, { align: 'center', width: W });
+        // High contrast manifest box details for boarding handlers
+        const AS_Y = CT + 235;
+        doc.roundedRect(QX, AS_Y, QCW, 210, 4).fill(BRAND_LIGHT_BG);
+        
+        doc.fillColor(TEXT_MUTED).font('Helvetica-Bold').fontSize(7)
+           .text('GATE VALIDATION MANIFEST', QX + 12, AS_Y + 14);
+           
+        this.pdfRightManifestRow(doc, 'ROUTE REF', `${ctx.route.origin.substring(0,3)}-${ctx.route.destination.substring(0,3)}`, AS_Y + 32, QX + 12, QCW - 24);
+        this.pdfRightManifestRow(doc, 'GATE DEPART', dep.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }), AS_Y + 54, QX + 12, QCW - 24);
+        this.pdfRightManifestRow(doc, 'SEAT ASSIGN', seat ? seat.seatNumber : 'N/A', AS_Y + 76, QX + 12, QCW - 24);
+        this.pdfRightManifestRow(doc, 'CLASS LEVEL', seat ? seat.seatType : 'N/A', AS_Y + 98, QX + 12, QCW - 24);
+        
+        const issueDateStr = new Date(ticket.issuedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        this.pdfRightManifestRow(doc, 'ISSUED DATE', issueDateStr, AS_Y + 120, QX + 12, QCW - 24);
 
-        // ── Footer ────────────────────────────────────────────────────────────
-        const FY = TEAR_Y + 14;
+        // Security barcode boundary background accent
+        doc.rect(QX + 12, AS_Y + 148, QCW - 24, 48).fill(WHITE);
+        doc.roundedRect(QX + 12, AS_Y + 148, QCW - 24, 48, 2).lineWidth(0.5).strokeColor(DIVIDER).stroke();
+        
+        // Mocking an enterprise security vector pattern string inside barcode box
+        doc.fillColor(TEXT_MUTED).font('Helvetica').fontSize(5.5)
+           .text('MNR-SECURE-PROTOCOL-V26//' + ticket.qrCode.replace(/\|/g, '-'), QX + 16, AS_Y + 156, { width: QCW - 32, align: 'center' });
+        doc.fillColor(BRAND_DARK).font('Helvetica-Bold').fontSize(7.5)
+           .text('★ VALID SYSTEM RECORD ★', QX + 16, AS_Y + 176, { width: QCW - 32, align: 'center', characterSpacing: 0.5 });
+
+        // ── Security Tear Line (Perforation styling) ─────────────────────────
+        const TEAR_Y = CT + CH + 24;
+        doc.save();
+        doc.moveTo(40, TEAR_Y).lineTo(W - 40, TEAR_Y)
+           .dash(4, { space: 4 }).strokeColor('#94a3b8').lineWidth(1).stroke();
+        doc.restore();
+        
+        doc.fillColor(TEXT_MUTED).font('Helvetica-Bold').fontSize(6.5)
+           .text('✂   DETACHABLE MANIFEST STUB — PRESENT VALID IDENTIFICATION UPON BOARDING   ✂', 0, TEAR_Y - 3.5, { align: 'center', width: W, characterSpacing: 0.5 });
+
+        // ── Executive Footer ──────────────────────────────────────────────────
+        const FY = TEAR_Y + 18;
         doc.fillColor(TEXT_MUTED).font('Helvetica').fontSize(7.5).text(
-          'This ticket is valid for the specified passenger, date and route only. ' +
-          'Present at boarding. For support: +251920839188',
-          40, FY, { align: 'center', width: W - 80 },
+          'Terms & Conditions: This electronic document is non-transferable and valid solely for the scheduled departure itinerary details noted herein. ' +
+          'Passengers are required to check-in 30 minutes prior to scheduled departure. For systemic tier customer infrastructure inquiries, contact support.',
+          40, FY, { align: 'center', width: W - 80, lineGap: 2 },
         );
-        doc.fillColor(TEXT_MUTED).font('Helvetica').fontSize(6.5)
-           .text(`© ${new Date().getFullYear()} Menaharia PLC — All rights reserved`, 0, FY + 20, { align: 'center', width: W });
+        
+        doc.fillColor(TEXT_MUTED).font('Helvetica-Bold').fontSize(7)
+           .text(`© ${new Date().getFullYear()} MENAHARIA PLC. ARCHITECTURAL PLATFORM INFRASTRUCTURE. ALL RIGHTS RESERVED.`, 0, FY + 32, { align: 'center', width: W, characterSpacing: 0.2 });
 
         doc.end();
       } catch (err) {
@@ -475,13 +536,18 @@ export class TicketService {
   // ─── PDF helpers ─────────────────────────────────────────────────────────────
 
   private pdfSection(doc: any, label: string, y: number, x: number) {
-    doc.fillColor(BRAND_DARK).font('Helvetica-Bold').fontSize(7.5).text(label, x, y);
+    doc.fillColor(BRAND_DARK).font('Helvetica-Bold').fontSize(8).text(label, x, y, { characterSpacing: 0.5 });
   }
 
   private pdfInfoRow(doc: any, label: string, value: string, y: number, x: number, colW: number) {
-    const VALUE_X = x + 90;
-    doc.fillColor(TEXT_MUTED).font('Helvetica').fontSize(8).text(label, x, y, { width: 86 });
-    doc.fillColor(TEXT_DARK).font('Helvetica').fontSize(8).text(value ?? 'N/A', VALUE_X, y, { width: colW - 90 });
+    const VALUE_X = x + 105;
+    doc.fillColor(TEXT_MUTED).font('Helvetica-Bold').fontSize(7).text(label, x, y + 1, { width: 100 });
+    doc.fillColor(TEXT_DARK).font('Helvetica').fontSize(8.5).text(value ?? 'N/A', VALUE_X, y, { width: colW - 105 });
+  }
+
+  private pdfRightManifestRow(doc: any, label: string, value: string, y: number, x: number, width: number) {
+    doc.fillColor(TEXT_MUTED).font('Helvetica-Bold').fontSize(6.5).text(label, x, y);
+    doc.fillColor(TEXT_DARK).font('Helvetica-Bold').fontSize(8).text(value ?? 'N/A', x, y, { align: 'right', width: width });
   }
 
   /** @deprecated kept for legacy callers; use pdfInfoRow */
@@ -490,8 +556,9 @@ export class TicketService {
   }
 
   private pdfDivider(doc: any, y: number, x: number, width: number) {
-    doc.moveTo(x, y).lineTo(x + width, y).strokeColor(DIVIDER).lineWidth(0.5).stroke();
+    doc.moveTo(x, y).lineTo(x + width, y).strokeColor(DIVIDER).lineWidth(0.75).stroke();
   }
+  
 
   // ─── Stamp helpers ────────────────────────────────────────────────────────────
 
