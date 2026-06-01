@@ -28,11 +28,7 @@ export function selectCallbackUrl(type: PaymentWebhookScenariosEnum): string {
 export function selectReturnUrl(explicitReturnUrl?: string): string {
   if (explicitReturnUrl) return explicitReturnUrl;
 
-  const BASE_URL = process.env.BASE_URL;
-
-  if (!BASE_URL) throw new BadRequestException('BASE_URL not set in enviornment');
-
-  return BASE_URL;
+  return process.env.PAYMENT_REDIRECT_URL ?? 'http://localhost:5173/payment-return.html';
 }
 
 /**
